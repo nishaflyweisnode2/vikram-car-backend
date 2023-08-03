@@ -1,6 +1,21 @@
 const mongoose = require('mongoose');
 
 const carSchema = new mongoose.Schema({
+    brand: {
+        _id: {
+            type: mongoose.Schema.Types.ObjectId,
+            //required: true,
+            ref: 'Brand'
+        },
+        name: {
+            type: String,
+            //required: true,
+        },
+        image: {
+            type: String,
+            //required: true,
+        },
+    },
     name: {
         type: String,
         required: true,
@@ -8,7 +23,7 @@ const carSchema = new mongoose.Schema({
     buyingOption: {
         type: String,
         enum: ["Live Auction", "Ready to Lift", "Used Vehicles", "Scrap-Spare"],
-        required: true,
+        //required: true,
     },
     price: {
         type: Number,
@@ -31,14 +46,27 @@ const carSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    image: {
-        type: String,
-        required: true,
-    },
+    image: [
+        {
+            type: String,
+            required: true,
+        },
+    ],
     year: {
         type: Number,
         required: true,
     },
+    totalKm: {
+        type: Number,
+        default: 0
+        //required: true,
+    },
+    sellCarImage: [
+        {
+            type: String,
+            required: true,
+        },
+    ],
     mileage: {
         type: Number,
         required: true,
@@ -52,6 +80,10 @@ const carSchema = new mongoose.Schema({
         default: false,
     },
     isScrap: {
+        type: Boolean,
+        default: false,
+    },
+    isSellCar: {
         type: Boolean,
         default: false,
     },
@@ -81,7 +113,8 @@ const carSchema = new mongoose.Schema({
         type: String
     },
 
-});
+
+}, { timestamps: true });
 
 const Car = mongoose.model('Car', carSchema);
 

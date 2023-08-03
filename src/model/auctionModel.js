@@ -58,6 +58,7 @@ const auctionSchema = new mongoose.Schema({
         },
     },
 
+
 }, { timestamps: true });
 
 const Auction = mongoose.model('Auction', auctionSchema);

@@ -45,7 +45,7 @@ const userSchema = new mongoose.Schema({
     ],
     myBids: [
         {
-            car: {
+            auction: {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'Auction',
                 required: true,
@@ -54,6 +54,9 @@ const userSchema = new mongoose.Schema({
                 type: Number,
                 required: true,
             },
+            car: {
+                type: String,
+            }
         }
     ],
 

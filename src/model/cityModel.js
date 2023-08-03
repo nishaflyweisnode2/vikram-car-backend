@@ -6,7 +6,9 @@ const citySchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
-});
+
+
+}, { timestamps: true });
 
 const City = mongoose.model('City', citySchema);
 

@@ -40,3 +40,14 @@ module.exports.addMyBidSchema = Joi.object({
     }).required(),
     bidAmount: Joi.number().integer().required(),
 })
+
+
+
+module.exports.getMyWinsSchema = Joi.object({
+    userId: Joi.string().custom((value, helpers) => {
+        if (!mongoose.isValidObjectId(value)) {
+            return helpers.error('any.invalid');
+        }
+        return value;
+    }).required(),
+});

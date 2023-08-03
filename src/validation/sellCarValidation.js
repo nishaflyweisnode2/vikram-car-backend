@@ -2,7 +2,7 @@ const Joi = require('joi');
 const mongoose = require('mongoose');
 
 
-module.exports.carSchema = Joi.object({
+module.exports.sellCarSchema = Joi.object({
     brand: Joi.string().custom((value, helpers) => {
         if (!mongoose.isValidObjectId(value)) {
             return helpers.error('any.invalid');
@@ -29,32 +29,5 @@ module.exports.carSchema = Joi.object({
     city: Joi.string().required(),
     rto: Joi.string().required(),
     documentStatus: Joi.string().required(),
-});
-
-
-module.exports.getCarsByBuyingOptionSchema = Joi.object({
-    buyingOption: Joi.string().valid('Live Auction', 'Ready to Lift', 'Used Vehicles', 'Scrap-Spare').required(),
-});
-
-
-module.exports.searchCarsSchema = Joi.object({
-    brand: Joi.string().optional(),
-    rto: Joi.string().optional(),
-    filter: Joi.string().valid('mileage', 'totalKm', 'price', 'year').optional(),
-});
-
-
-module.exports.compareCarsSchema = Joi.object({
-    car1Id: Joi.string().custom((value, helpers) => {
-        if (!mongoose.isValidObjectId(value)) {
-            return helpers.error('any.invalid');
-        }
-        return value;
-    }).required(),
-    car2Id: Joi.string().custom((value, helpers) => {
-        if (!mongoose.isValidObjectId(value)) {
-            return helpers.error('any.invalid');
-        }
-        return value;
-    }).required(),
+    totalKm: Joi.number().required(),
 });
