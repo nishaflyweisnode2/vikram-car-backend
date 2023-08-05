@@ -3,7 +3,8 @@ const mongoose = require('mongoose');
 const sparePartSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: true
+        required: true,
+        text: true,
     },
     brand: {
         type: mongoose.Schema.Types.ObjectId,

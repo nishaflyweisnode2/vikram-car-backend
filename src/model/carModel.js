@@ -9,6 +9,7 @@ const carSchema = new mongoose.Schema({
         },
         name: {
             type: String,
+            text: true,
             //required: true,
         },
         image: {
@@ -19,6 +20,7 @@ const carSchema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
+        text: true,
     },
     buyingOption: {
         type: String,
@@ -41,6 +43,8 @@ const carSchema = new mongoose.Schema({
         type: String,
         enum: ["Petrol", "Diesel", "CNG", "Electric", "Hybrid"],
         required: true,
+        text: true,
+
     },
     description: {
         type: String,

@@ -11,6 +11,9 @@ const sellCarRoutes = require('./src/routes/sellCarRoutes');
 const rtoServiceRoutes = require('./src/routes/rtoServiceRoutes')
 const transportRoutes = require('./src/routes/transportRoutes')
 const spareRoutes = require('./src/routes/spareRoutes')
+const contactUsRoutes = require('./src/routes/contactUsRoutes')
+const requestCallBackRoutes = require('./src/routes/requestCallBackRoutes')
+const termAndConditionRoutes = require('./src/routes/termAndConditionRoutes')
 
 
 
@@ -51,6 +54,9 @@ app.use('/sellCar', sellCarRoutes);
 app.use('/rtoService', rtoServiceRoutes);
 app.use('/transport', transportRoutes);
 app.use('/spare', spareRoutes);
+app.use('/contactUs', contactUsRoutes);
+app.use('/callBack', requestCallBackRoutes);
+app.use('/condition', termAndConditionRoutes);
 
 
 

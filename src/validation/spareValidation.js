@@ -23,3 +23,20 @@ module.exports.createSparePartSchema = Joi.object({
     quantity: Joi.number().integer().min(1).required(),
     image: Joi.string().required(),
 });
+
+
+module.exports.getSpecificSparePartSchema = Joi.object({
+    sparePartId: Joi.string().custom((value, helpers) => {
+        if (!mongoose.isValidObjectId(value)) {
+            return helpers.error('any.invalid');
+        }
+        return value;
+    }).required(),
+});
+
+
+
+module.exports.searchSparePartsSchema = Joi.object({
+    searchQuery: Joi.string().required(),
+});
+
