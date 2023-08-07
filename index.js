@@ -4,16 +4,18 @@ const mongoose = require('mongoose');
 
 
 const routes = require('./src/routes/userRoutes');
-const carRoutes = require('./src/routes/carRoutes')
-const auctionRoutes = require('./src/routes/auctionRoutes')
-const brandRoutes = require('./src/routes/brandRoutes')
+const carRoutes = require('./src/routes/carRoutes');
+const auctionRoutes = require('./src/routes/auctionRoutes');
+const brandRoutes = require('./src/routes/brandRoutes');
 const sellCarRoutes = require('./src/routes/sellCarRoutes');
-const rtoServiceRoutes = require('./src/routes/rtoServiceRoutes')
-const transportRoutes = require('./src/routes/transportRoutes')
-const spareRoutes = require('./src/routes/spareRoutes')
-const contactUsRoutes = require('./src/routes/contactUsRoutes')
-const requestCallBackRoutes = require('./src/routes/requestCallBackRoutes')
-const termAndConditionRoutes = require('./src/routes/termAndConditionRoutes')
+const rtoServiceRoutes = require('./src/routes/rtoServiceRoutes');
+const transportRoutes = require('./src/routes/transportRoutes');
+const spareRoutes = require('./src/routes/spareRoutes');
+const contactUsRoutes = require('./src/routes/contactUsRoutes');
+const requestCallBackRoutes = require('./src/routes/requestCallBackRoutes');
+const termAndConditionRoutes = require('./src/routes/termAndConditionRoutes');
+const subscriptionRoutes = require('./src/routes/suscriptionRoutes');
+const offerRoutes = require('./src/routes/offerRoutes');
 
 
 
@@ -57,6 +59,8 @@ app.use('/spare', spareRoutes);
 app.use('/contactUs', contactUsRoutes);
 app.use('/callBack', requestCallBackRoutes);
 app.use('/condition', termAndConditionRoutes);
+app.use('/subscription', subscriptionRoutes);
+app.use('/offer', offerRoutes);
 
 
 

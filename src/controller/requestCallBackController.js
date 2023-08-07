@@ -30,7 +30,23 @@ const requestCallback = async (req, res) => {
 };
 
 
+const getAllCallbacks = async (req, res) => {
+    try {
+        const callbackRequests = await CallbackRequest.find();
+
+        res.status(200).json({
+            status: 200,
+            message: 'Successfully retrieved callback requests',
+            callbackRequests,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to retrieve callback requests' });
+    }
+};
+
 
 module.exports = {
     requestCallback,
+    getAllCallbacks
 };

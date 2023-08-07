@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 
 
 
-const createAuctionSchema = Joi.object({
+module.exports.createAuctionSchema = Joi.object({
     carId: Joi.string().custom((value, helpers) => {
         if (!mongoose.isValidObjectId(value)) {
             return helpers.error('any.invalid');
@@ -27,6 +27,4 @@ const createAuctionSchema = Joi.object({
     endTime: Joi.date().iso().min(Joi.ref('startTime')).required(),
 });
 
-module.exports = {
-    createAuctionSchema,
-};
+

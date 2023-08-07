@@ -4,25 +4,24 @@ const subscriptionSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true,
-    },
-    email: {
-        type: String,
-        required: true,
-        unique: true,
-        trim: true,
-        lowercase: true,
-        validate: {
-            validator: function (value) {
-                return /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(value);
-            },
-            message: 'Please provide a valid email address',
-        },
+        // required: true,
     },
     status: {
         type: String,
         enum: ['subscribed', 'unsubscribed'],
-        default: 'subscribed',
+        default: 'unsubscribed',
+    },
+    price: {
+        type: Number,
+        // required: true,
+    },
+    time: {
+        type: String,
+        required: true,
+    },
+    description: {
+        type: String,
+        // required: true,
     },
     createdAt: {
         type: Date,

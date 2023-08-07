@@ -55,6 +55,10 @@ const signup = async (req, res) => {
         if (!mobileRegex.test(mobileNumber)) {
             return res.status(406).json({ status: 406, message: "Mobile Number is not valid" });
         }
+        const existingMobile = await userDb.findOne({ mobileNumber })
+        if (existingMobile) {
+            return res.status(400).json({ status: 400, message: "Mobile Number already exists" });
+        }
         const existingUser = await userDb.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ status: 400, message: "Email already exists" });
@@ -427,33 +431,33 @@ const addMyBid = async (req, res) => {
 
 const getMyWins = async (req, res) => {
     try {
-      const { error } = getMyWinsSchema.validate(req.params);
-      if (error) {
-        return res.status(400).json({ status: 400, message: error.details[0].message });
-      }
-      const userId = req.params.userId;
-      const user = await userDb.findById(userId).populate({
-        path: 'myBids.auction',
-        // populate: {
-        //   path: 'car',
-        //   model: 'Car',
-        // },
-      });
-  
-      if (!user) {
-        return res.status(404).json({ status: 404, message: 'User not found' });
-      }
-      const myWins = user.myBids.filter((bid) => bid.auction && bid.auction.winner && bid.auction.winner.toString() === userId);
-      const carIds = myWins.map((bid) => bid.car.toString());
-      const cars = await Car.find({ _id: { $in: carIds } });
-  
-      res.status(200).json({ status: 200, wins: myWins, carIds, cars });
+        const { error } = getMyWinsSchema.validate(req.params);
+        if (error) {
+            return res.status(400).json({ status: 400, message: error.details[0].message });
+        }
+        const userId = req.params.userId;
+        const user = await userDb.findById(userId).populate({
+            path: 'myBids.auction',
+            // populate: {
+            //   path: 'car',
+            //   model: 'Car',
+            // },
+        });
+
+        if (!user) {
+            return res.status(404).json({ status: 404, message: 'User not found' });
+        }
+        const myWins = user.myBids.filter((bid) => bid.auction && bid.auction.winner && bid.auction.winner.toString() === userId);
+        const carIds = myWins.map((bid) => bid.car.toString());
+        const cars = await Car.find({ _id: { $in: carIds } });
+
+        res.status(200).json({ status: 200, wins: myWins, carIds, cars });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Failed to fetch user wins' });
+        console.error(error);
+        res.status(500).json({ error: 'Failed to fetch user wins' });
     }
-  };
-  
+};
+
 
 
 

@@ -21,7 +21,7 @@ module.exports.createSparePartSchema = Joi.object({
     description: Joi.string().required(),
     price: Joi.number().min(0).required(),
     quantity: Joi.number().integer().min(1).required(),
-    image: Joi.string().required(),
+    image: Joi.array().required(),
 });
 
 
@@ -40,3 +40,19 @@ module.exports.searchSparePartsSchema = Joi.object({
     searchQuery: Joi.string().required(),
 });
 
+
+
+module.exports.buySparePartSchema = Joi.object({
+    sparePartId: Joi.string().custom((value, helpers) => {
+        if (!mongoose.isValidObjectId(value)) {
+            return helpers.error('any.invalid');
+        }
+        return value;
+    }).required(),
+    userId: Joi.string().custom((value, helpers) => {
+        if (!mongoose.isValidObjectId(value)) {
+            return helpers.error('any.invalid');
+        }
+        return value;
+    }).required(),
+})

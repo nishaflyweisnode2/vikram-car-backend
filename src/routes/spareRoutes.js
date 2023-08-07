@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createSparePart, getAllSpareParts, getSpecificSparePart, searchSpareParts } = require('../controller/spareController');
+const { createSparePart, getAllSpareParts, getSpecificSparePart, searchSpareParts, buySparePart, updateSpareImage } = require('../controller/spareController');
 
 
 
@@ -12,6 +12,9 @@ router.get('/:sparePartId', getSpecificSparePart);
 
 router.get('/spare-parts/search', searchSpareParts);
 
+router.post('/spare-parts/buy', buySparePart);
+
+router.put('/update/:sparePartId/image', updateSpareImage);
 
 
 

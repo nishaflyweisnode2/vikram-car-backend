@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 
 const { signup, verifyOTP, resendOTP, login, selectCity, addToFavourites, addMyBid, getMyWins } = require("../controller/userController");
+const { authenticateUser, authorizeUser, authorization, authenticateAdmin } = require("../middleware/auth");
 const { createCity } = require('../controller/cityController');
 
 
@@ -13,10 +14,10 @@ router.post('/signup', signup);
 router.post('/verify-otp', verifyOTP);
 router.post('/resend-otp', resendOTP);
 router.post('/login', login)
-router.post('/selectCity', selectCity)
-router.post('/favourite/:userId', addToFavourites);
-router.post('/users/:userId/bids', addMyBid);
-router.get('/:userId/wins', getMyWins);
+router.post('/selectCity', authenticateUser, selectCity)
+router.post('/favourite/:userId', authenticateUser, authorization, addToFavourites);
+router.post('/users/:userId/bids', authenticateUser, authorization, addMyBid);
+router.get('/:userId/wins', authenticateUser, authorization, getMyWins);
 
 
 
