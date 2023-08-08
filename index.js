@@ -16,6 +16,7 @@ const requestCallBackRoutes = require('./src/routes/requestCallBackRoutes');
 const termAndConditionRoutes = require('./src/routes/termAndConditionRoutes');
 const subscriptionRoutes = require('./src/routes/suscriptionRoutes');
 const offerRoutes = require('./src/routes/offerRoutes');
+const vendorRoutes = require('./src/routes/vendorRoutes');
 
 
 
@@ -61,6 +62,9 @@ app.use('/callBack', requestCallBackRoutes);
 app.use('/condition', termAndConditionRoutes);
 app.use('/subscription', subscriptionRoutes);
 app.use('/offer', offerRoutes);
+app.use('/vendor', vendorRoutes);
+
+
 
 
 

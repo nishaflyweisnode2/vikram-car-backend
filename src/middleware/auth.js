@@ -22,12 +22,14 @@ const authenticateUser = (req, res, next) => {
 };
 
 
+
 const authorizeUser = (roles) => (req, res, next) => {
   if (!roles.includes(req.user.userType)) {
     return res.status(403).json({ status: false, message: 'You are not authorized to perform this action' });
   }
   next();
 };
+
 
 
 const authorization = async function (req, res, next) {
