@@ -7,7 +7,6 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
 const twilio = require('twilio');
-const { v4: uuidv4 } = require('uuid');
 
 const { addToFavouritesSchema, addMyBidSchema, getMyWinsSchema } = require('../validation/uservalidation');
 
@@ -29,6 +28,31 @@ const transporter = nodemailer.createTransport({
         pass: process.env.PASS
     }
 });
+
+
+
+// image upload function start 
+const multer = require('multer');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('cloudinary').v2;
+cloudinary.config({
+    cloud_name: process.env.cloud_name,
+    api_key: process.env.api_key,
+    api_secret: process.env.api_secret
+});
+// upload image Start
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: "images/image",
+        allowed_formats: ["jpg", "jpeg", "png", "PNG", "xlsx", "xls", "pdf", "PDF"],
+    },
+});
+const upload = multer({ storage: storage }).array('profileImage', 2);
+// const upload = multer({ storage: storage, fieldname: 'profileImage' });
+
+// upload image End
+
 
 const signup = async (req, res) => {
     const { fullName, email, mobileNumber } = req.body;
@@ -71,6 +95,7 @@ const signup = async (req, res) => {
             email,
             mobileNumber,
             otp,
+            profileImage: '.',
         });
 
         await user.save();
@@ -459,6 +484,49 @@ const getMyWins = async (req, res) => {
 };
 
 
+const updateProfileImage = async (req, res) => {
+    try {
+        await upload(req, res, async (err) => {
+            if (err instanceof multer.MulterError) {
+                return res.status(500).json({ error: 'Error uploading Profile image', err });
+            } else if (err) {
+                return res.status(500).json({ error: 'An unknown error occurred', err });
+            }
+
+            if (!req.files || req.files.length === 0) {
+                return res.status(400).json({ status: 400, message: 'No Profile image uploaded' });
+            }
+
+            const imageUrl = req.files[0].path;
+            const userId = req.params.userId;
+
+            const user = await userDb.findByIdAndUpdate(
+                userId,
+                { $push: { profileImage: { $each: [imageUrl], $position: 0 } } },
+                { new: true }
+            );
+
+            if (!user) {
+                return res.status(404).json({ status: 404, message: 'User not found' });
+            }
+
+            const updatedProfileImages = user.profileImage || [];
+            if (updatedProfileImages.length > 2) {
+                return res.status(400).json({ status: 400, message: 'Maximum limit of 2 Profile images reached' });
+            }
+
+            return res.status(200).json({
+                status: 200,
+                message: 'Profile image updated successfully',
+                user
+            });
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Failed to update Profile image' });
+    }
+};
+
 
 
 
@@ -473,5 +541,6 @@ module.exports = {
     selectCity,
     addToFavourites,
     addMyBid,
-    getMyWins
+    getMyWins,
+    updateProfileImage
 };

@@ -57,10 +57,25 @@ const vendorSchema = new mongoose.Schema({
         dateOfBirth: Date,
         addressLine1: String,
         addressLine2: String,
-        panCardImage: String,
-        aadharCardImage: String,
+        panCardImage: [
+            {
+                type: String,
+                required: true,
+            },
+        ],
+        aadharCardImage: [
+            {
+                type: String,
+                required: true,
+            },
+        ],
         selectYourDocument: String,
-        otherDocumentImage: String,
+        otherDocumentImage: [
+            {
+                type: String,
+                required: true,
+            },
+        ],
     },
     workProfile: {
         selectYourCity: String,

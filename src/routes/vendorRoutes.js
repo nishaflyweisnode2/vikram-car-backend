@@ -2,7 +2,8 @@ require('dotenv').config()
 const express = require('express');
 const router = express.Router();
 
-const { signup, verifyOTP, resendOTP, loginWithMobile, loginWithEmail, selectCity, addToFavourites, updateWorkProfile, updateDocuments } = require("../controller/vendorController");
+const { signup, verifyOTP, resendOTP, loginWithMobile, loginWithEmail, selectCity, addToFavourites, updateWorkProfile, updateDocuments, updatePanCardImageImage, updateAadharCardImage, updateOtherDocumentImage } = require("../controller/vendorController");
+
 const { authenticateUser, authorizeUser, authorization, authenticateAdmin } = require("../middleware/auth");
 const { createCity } = require('../controller/cityController');
 
@@ -19,6 +20,10 @@ router.post('/selectCity', authenticateUser, selectCity)
 router.post('/favourite/:userId', authenticateUser, authorization, addToFavourites);
 router.put('/update-work-profile/:vendorId', updateWorkProfile);
 router.put('/update-documents/:vendorId', updateDocuments);
+router.put('/update/:vendorId/panCardImage', updatePanCardImageImage);
+router.put('/update/:vendorId/aadharCardImage', updateAadharCardImage);
+router.put('/update/:vendorId/otherDocumentImage', updateOtherDocumentImage);
+
 
 
 

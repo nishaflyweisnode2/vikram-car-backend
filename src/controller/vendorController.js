@@ -7,7 +7,6 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
 const twilio = require('twilio');
-const { v4: uuidv4 } = require('uuid');
 
 const { signupValidationSchema, addToFavouritesSchema, workProfileUpdateSchema, documentsUpdateSchema } = require('../validation/vendorValidation');
 
@@ -30,6 +29,28 @@ const transporter = nodemailer.createTransport({
     }
 });
 
+
+// image upload function start 
+const multer = require('multer');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('cloudinary').v2;
+cloudinary.config({
+    cloud_name: process.env.cloud_name,
+    api_key: process.env.api_key,
+    api_secret: process.env.api_secret
+});
+// upload image Start
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: "images/image",
+        allowed_formats: ["jpg", "jpeg", "png", "PNG", "xlsx", "xls", "pdf", "PDF"],
+    },
+});
+const upload = multer({ storage: storage }).array('panCardImage', 3);
+const upload1 = multer({ storage: storage }).array('aadharCardImage', 3);
+const upload2 = multer({ storage: storage }).array('otherDocumentImage', 3);
+// upload image End
 
 
 const signup = async (req, res) => {
@@ -288,14 +309,14 @@ const loginWithEmail = async (req, res) => {
         if (!passwordRegex.test(password)) {
             return res.status(406).json({ status: 406, message: "Password is not valid" });
         }
-        if (password !== confirmPassword) {
-            return res.status(400).json({ status: 400, message: "Password and Confirm Password must match" });
-        }
+        // if (password !== confirmPassword) {
+        //     return res.status(400).json({ status: 400, message: "Password and Confirm Password must match" });
+        // }
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        const user = await vendorDb.findOne({ mobileNumber });
+        const user = await vendorDb.findOne({ email });
         if (!user) {
-            return res.status(401).json({ status: 401, message: "Invalid mobileNumber" });
+            return res.status(401).json({ status: 401, message: "Invalid Email ID" });
         }
         if (user.otp !== otp) {
             return res.status(401).json({ status: 401, message: "Invalid OTP" });
@@ -338,7 +359,7 @@ const selectCity = async (req, res) => {
             return res.status(404).json({ status: 404, message: "Selected city not found" });
         }
 
-        user.selectedCity = selectedCity;
+        user.workProfile.selectYourCity = selectedCity;
         await user.save();
 
         return res.status(200).json({ status: 200, message: "City selection saved successfully" });
@@ -451,6 +472,114 @@ const updateDocuments = async (req, res) => {
 };
 
 
+const updatePanCardImageImage = async (req, res) => {
+    try {
+        upload(req, res, async (err) => {
+            if (err) {
+                return res.status(500).json({ error: 'Error uploading Pan Card image', err });
+            }
+            if (!req.files || req.files.length === 0) {
+                return res.status(400).json({ status: 400, message: 'No Pan Card image uploaded' });
+            }
+            const imageUrl = req.files[0].path;
+            const vendorId = req.params.vendorId;
+            const vendor = await vendorDb.findByIdAndUpdate(
+                vendorId,
+                // { $push: { "documents.aadharCardImage": imageUrl } },
+                { $push: { "documents.panCardImage": { $each: [imageUrl], $position: 0 } } },
+                { new: true }
+            );
+            if (!vendor) {
+                return res.status(404).json({ status: 404, message: 'User not found' });
+            }
+            if (vendor.documents.panCardImage.length >= 3) {
+                return res.status(400).json({ status: 400, message: 'Maximum limit of 3 Pan Card images reached' });
+            }
+            return res.status(200).json({
+                status: 200,
+                message: 'Pan Card image updated successfully',
+                vendor,
+            });
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Failed to update Aadhar Card image' });
+    }
+};
+
+
+const updateAadharCardImage = async (req, res) => {
+    try {
+        upload1(req, res, async (err) => {
+            if (err) {
+                return res.status(500).json({ error: 'Error uploading Aadhar Card image', err });
+            }
+            if (!req.files || req.files.length === 0) {
+                return res.status(400).json({ status: 400, message: 'No Aadhar Card image uploaded' });
+            }
+            const imageUrl = req.files[0].path;
+            const vendorId = req.params.vendorId;
+            const vendor = await vendorDb.findByIdAndUpdate(
+                vendorId,
+                // { $push: { "documents.aadharCardImage": imageUrl } },
+                { $push: { "documents.aadharCardImage": { $each: [imageUrl], $position: 0 } } },
+                { new: true }
+            );
+            if (!vendor) {
+                return res.status(404).json({ status: 404, message: 'User not found' });
+            }
+            if (vendor.documents.aadharCardImage.length >= 3) {
+                return res.status(400).json({ status: 400, message: 'Maximum limit of 3 Aadhar Card images reached' });
+            }
+            return res.status(200).json({
+                status: 200,
+                message: 'Aadhar Card image updated successfully',
+                vendor,
+            });
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Failed to update Aadhar Card image' });
+    }
+};
+
+
+const updateOtherDocumentImage = async (req, res) => {
+    try {
+        upload2(req, res, async (err) => {
+            if (err) {
+                return res.status(500).json({ error: 'Error uploading Other Document image', err });
+            }
+            if (!req.files || req.files.length === 0) {
+                return res.status(400).json({ status: 400, message: 'No Other Document image uploaded' });
+            }
+            const imageUrl = req.files[0].path;
+            const vendorId = req.params.vendorId;
+            const vendor = await vendorDb.findByIdAndUpdate(
+                vendorId,
+                // { $push: { "documents.aadharCardImage": imageUrl } },
+                { $push: { "documents.otherDocumentImage": { $each: [imageUrl], $position: 0 } } },
+                { new: true }
+            );
+            if (!vendor) {
+                return res.status(404).json({ status: 404, message: 'User not found' });
+            }
+            if (vendor.documents.otherDocumentImage.length >= 3) {
+                return res.status(400).json({ status: 400, message: 'Maximum limit of 3 Other Document images reached' });
+            }
+            return res.status(200).json({
+                status: 200,
+                message: 'Other Document image updated successfully',
+                vendor,
+            });
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Failed to update Other Document image' });
+    }
+};
+
+
 
 
 
@@ -468,5 +597,8 @@ module.exports = {
     selectCity,
     addToFavourites,
     updateWorkProfile,
-    updateDocuments
+    updateDocuments,
+    updatePanCardImageImage,
+    updateAadharCardImage,
+    updateOtherDocumentImage
 };

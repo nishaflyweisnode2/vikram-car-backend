@@ -29,10 +29,7 @@ const userSchema = new mongoose.Schema({
         enum: ["Admin", "User"],
         default: "User"
     },
-    profileImage: {
-        type: String,
-        // required: true
-    },
+    profileImage: [{ type: String }],
     selectedCity: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'City',

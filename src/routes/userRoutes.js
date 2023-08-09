@@ -2,7 +2,7 @@ require('dotenv').config()
 const express = require('express');
 const router = express.Router();
 
-const { signup, verifyOTP, resendOTP, login, selectCity, addToFavourites, addMyBid, getMyWins } = require("../controller/userController");
+const { signup, verifyOTP, resendOTP, login, selectCity, addToFavourites, addMyBid, getMyWins, updateProfileImage } = require("../controller/userController");
 const { authenticateUser, authorizeUser, authorization, authenticateAdmin } = require("../middleware/auth");
 const { createCity } = require('../controller/cityController');
 
@@ -18,6 +18,7 @@ router.post('/selectCity', authenticateUser, selectCity)
 router.post('/favourite/:userId', authenticateUser, authorization, addToFavourites);
 router.post('/users/:userId/bids', authenticateUser, authorization, addMyBid);
 router.get('/:userId/wins', authenticateUser, authorization, getMyWins);
+router.put('/update/:userId/profileImage', updateProfileImage);
 
 
 

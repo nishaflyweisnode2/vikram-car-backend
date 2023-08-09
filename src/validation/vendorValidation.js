@@ -47,10 +47,10 @@ module.exports.documentsUpdateSchema = Joi.object({
     dateOfBirth: Joi.date(),
     addressLine1: Joi.string(),
     addressLine2: Joi.string(),
-    panCardImage: Joi.string(),
-    aadharCardImage: Joi.string(),
+    panCardImage: Joi.array().items(Joi.string()),
+    aadharCardImage: Joi.array().items(Joi.string()),
     selectYourDocument: Joi.string(),
-    otherDocumentImage: Joi.string(),
+    otherDocumentImage: Joi.array().items(Joi.string()),
 });
 
 
