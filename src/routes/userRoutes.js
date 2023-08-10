@@ -18,7 +18,7 @@ router.post('/selectCity', authenticateUser, selectCity)
 router.post('/favourite/:userId', authenticateUser, authorization, addToFavourites);
 router.post('/users/:userId/bids', authenticateUser, authorization, addMyBid);
 router.get('/:userId/wins', authenticateUser, authorization, getMyWins);
-router.put('/update/:userId/profileImage', updateProfileImage);
+router.put('/update/:userId/profileImage', authenticateUser, authorization, updateProfileImage);
 
 
 

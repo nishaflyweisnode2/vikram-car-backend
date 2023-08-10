@@ -10,6 +10,8 @@ module.exports.signupValidationSchema = Joi.object({
         .pattern(/^[0-9]+$/)
         .length(10)
         .required(),
+    password: Joi.string().optional(),
+
 });
 
 
@@ -54,3 +56,11 @@ module.exports.documentsUpdateSchema = Joi.object({
 });
 
 
+
+module.exports.searchValidationSchema = Joi.object({
+    category: Joi.string().valid('AllCar', 'NewCar', 'UsedCar').required(),
+    brand: Joi.string(),
+    model: Joi.string(),
+    location: Joi.string(),
+    pricerange: Joi.string()
+});

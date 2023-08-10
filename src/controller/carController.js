@@ -1,7 +1,10 @@
 const Car = require('../model/carModel');
 const Brand = require('../model/brandModel');
+const userDb = require('../model/userModel');
 const mongoose = require('mongoose');
-const { carSchema, getCarsByBuyingOptionSchema, searchCarsSchema, compareCarsSchema } = require('../validation/carValidation');
+
+
+const { carSchema, getCarsByBuyingOptionSchema, searchCarsSchema, compareCarsSchema, buyCarValidationSchema } = require('../validation/carValidation');
 
 
 
@@ -188,13 +191,15 @@ const searchCars = async (req, res) => {
             } else if (filter === 'price') {
                 query.price = { $gte: 100000, $lte: 2000000000 };
             } else if (filter === 'totalKm') {
-                query.totalKm = { $gte: 50000, $lte: 200000 };
+                query.totalKm = { $gte: 50000, $lte: 2000000 };
             } else if (filter === 'year') {
                 query.year = { $gte: 2019, $lte: 2024 };
             }
         }
-        const cars = await Car.find(query).populate('brand');
-
+        const cars = await Car.find(query).populate('brand', 'name image');
+        if (!cars || cars.length === 0) {
+            return res.status(404).json({ status: 404, message: 'No cars found' });
+        }
         res.status(200).json({ status: 200, cars });
     } catch (error) {
         console.error(error);
@@ -231,7 +236,41 @@ const compareCars = async (req, res) => {
 };
 
 
+const buyCar = async (req, res) => {
+    try {
+        const { error } = buyCarValidationSchema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ status: 400, message: error.details[0].message });
+        }
+        const { userId } = req.params;
+        const { carId } = req.body;
+
+        const user = await userDb.findById(userId);
+        if (!user) {
+            return res.status(404).json({ status: 404, message: 'User not found' });
+        }
+        const car = await Car.findById(carId);
+        if (!car) {
+            return res.status(404).json({ status: 404, message: 'Car not found' });
+        }
+        if (car.isSold) {
+            return res.status(400).json({ status: 400, message: 'Car is already sold' });
+        }
+
+        car.isSold = true;
+        user.buyCar.push(car._id);
+        await car.save();
+        await user.save();
+
+        res.status(200).json({ status: 200, message: 'Car purchased successfully' });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to buy car' });
+    }
+};
 
 
 
-module.exports = { createCar, updateCarImage, getCarsByBuyingOption, searchCars, compareCars };
+
+module.exports = { createCar, updateCarImage, getCarsByBuyingOption, searchCars, compareCars, buyCar };

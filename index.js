@@ -17,6 +17,7 @@ const termAndConditionRoutes = require('./src/routes/termAndConditionRoutes');
 const subscriptionRoutes = require('./src/routes/suscriptionRoutes');
 const offerRoutes = require('./src/routes/offerRoutes');
 const vendorRoutes = require('./src/routes/vendorRoutes');
+const depositeRoutes = require('./src/routes/depositeRoutes');
 
 
 
@@ -63,6 +64,7 @@ app.use('/condition', termAndConditionRoutes);
 app.use('/subscription', subscriptionRoutes);
 app.use('/offer', offerRoutes);
 app.use('/vendor', vendorRoutes);
+app.use('/deposite', depositeRoutes);
 
 
 

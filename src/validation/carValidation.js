@@ -58,3 +58,14 @@ module.exports.compareCarsSchema = Joi.object({
         return value;
     }).required(),
 });
+
+
+
+module.exports.buyCarValidationSchema = Joi.object({
+    carId: Joi.string().custom((value, helpers) => {
+        if (!mongoose.isValidObjectId(value)) {
+            return helpers.error('any.invalid');
+        }
+        return value;
+    }).required(),
+});

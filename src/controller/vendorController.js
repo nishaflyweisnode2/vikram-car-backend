@@ -8,7 +8,7 @@ const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
 const twilio = require('twilio');
 
-const { signupValidationSchema, addToFavouritesSchema, workProfileUpdateSchema, documentsUpdateSchema } = require('../validation/vendorValidation');
+const { signupValidationSchema, addToFavouritesSchema, workProfileUpdateSchema, documentsUpdateSchema, searchValidationSchema } = require('../validation/vendorValidation');
 
 
 const { nameRegex, passwordRegex, emailRegex, mobileRegex, objectId, isValidBody, isValid, isValidField } = require('../validation/commonValidation')
@@ -53,6 +53,113 @@ const upload2 = multer({ storage: storage }).array('otherDocumentImage', 3);
 // upload image End
 
 
+// const signup = async (req, res) => {
+//     try {
+//         const { fullName, email, mobileNumber, password, confirmPassword } = req.body;
+//         const { error } = signupValidationSchema.validate({
+//             fullName,
+//             email,
+//             mobileNumber,
+//         });
+//         if (error) {
+//             return res.status(400).json({ status: 400, message: error.details[0].message });
+//         }
+//         if (!isValidBody(req.body)) {
+//             return res.status(400).json({ status: 400, message: "Body can't be empty, please enter some data" });
+//         }
+//         if (!nameRegex.test(fullName)) {
+//             return res.status(406).json({ status: 406, message: "First name is not valid" });
+//         }
+//         if (!isValid(fullName)) {
+//             return res.status(400).json({ status: 400, message: "Email is required" });
+//         }
+//         if (!isValid(email)) {
+//             return res.status(400).json({ status: 400, message: "Email is required" });
+//         }
+//         if (!emailRegex.test(email)) {
+//             return res.status(406).json({ status: 406, message: "Email Id is not valid" });
+//         }
+//         if (!isValid(mobileNumber)) {
+//             return res.status(406).json({ status: 406, message: "Mobile Number is required" });
+//         }
+//         if (!mobileRegex.test(mobileNumber)) {
+//             return res.status(406).json({ status: 406, message: "Mobile Number is not valid" });
+//         }
+//         const existingMobile = await vendorDb.findOne({ mobileNumber })
+//         if (existingMobile) {
+//             return res.status(400).json({ status: 400, message: "Mobile Number already exists" });
+//         }
+//         if (!passwordRegex.test(password)) {
+//             return res.status(406).json({ status: 406, message: "Password is not valid" });
+//         }
+//         if (password !== confirmPassword) {
+//             return res.status(400).json({ status: 400, message: "Password and Confirm Password must match" });
+//         }
+
+//         const hashedPassword = await bcrypt.hash(password, 10);
+//         const existingUser = await vendorDb.findOne({ email });
+//         if (existingUser) {
+//             return res.status(400).json({ status: 400, message: "Email already exists" });
+//         }
+
+//         const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+//         const user = new vendorDb({
+//             fullName,
+//             email,
+//             mobileNumber,
+//             password: hashedPassword,
+//             otp,
+//             documents: {
+//                 phone: '...',
+//                 email: '...',
+//                 name: '...',
+//             },
+//         });
+
+//         await user.save();
+
+//         //nodemailer
+//         const mailOptions = {
+//             from: 'princegap001@gmail.com',
+//             to: email,
+//             subject: 'OTP for Signup',
+//             text: `Your OTP for signup is: ${otp}`
+//         };
+//         console.log("mailoptions", mailOptions);
+
+//         transporter.sendMail(mailOptions, (error, info) => {
+//             if (error) {
+//                 console.error('Error sending OTP via email:', error);
+//                 res.status(500).json({ error: 'Failed to send OTP via email' });
+//             } else {
+//                 console.log('OTP sent successfully via email:', info.response);
+//                 res.status(201).json({ status: 201, message: 'Signup successful', user });
+//             }
+//         });
+
+//         // twilio
+//         twilioClient.messages
+//             .create({
+//                 body: `Your OTP for signup is: ${otp}`,
+//                 from: '+15739833421',
+//                 to: "+91" + mobileNumber,
+//             })
+//             .then((message) => {
+//                 console.log(`SMS sent with SID: ${message.sid}`);
+//                 res.status(201).json({ status: 201, message: "Signup successful", user, /*token*/ });
+//             })
+//             .catch((error) => {
+//                 console.error('Error sending SMS:', error);
+//                 res.status(500).json({ error: 'Failed to send OTP via SMS' });
+//             });
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ error: 'Failed to create user' });
+//     }
+// };
+
+
 const signup = async (req, res) => {
     try {
         const { fullName, email, mobileNumber, password, confirmPassword } = req.body;
@@ -89,14 +196,18 @@ const signup = async (req, res) => {
         if (existingMobile) {
             return res.status(400).json({ status: 400, message: "Mobile Number already exists" });
         }
-        if (!passwordRegex.test(password)) {
-            return res.status(406).json({ status: 406, message: "Password is not valid" });
-        }
-        if (password !== confirmPassword) {
-            return res.status(400).json({ status: 400, message: "Password and Confirm Password must match" });
+
+        let hashedPassword = null;
+        if (password && confirmPassword) {
+            if (!passwordRegex.test(password)) {
+                return res.status(406).json({ status: 406, message: "Password is not valid" });
+            }
+            if (password !== confirmPassword) {
+                return res.status(400).json({ status: 400, message: "Password and Confirm Password must match" });
+            }
+            hashedPassword = await bcrypt.hash(password, 10);
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
         const existingUser = await vendorDb.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ status: 400, message: "Email already exists" });
@@ -119,40 +230,8 @@ const signup = async (req, res) => {
 
         await user.save();
 
-        //nodemailer
-        const mailOptions = {
-            from: 'princegap001@gmail.com',
-            to: email,
-            subject: 'OTP for Signup',
-            text: `Your OTP for signup is: ${otp}`
-        };
-        console.log("mailoptions", mailOptions);
+        res.status(201).json({ status: 201, message: 'Signup successful', user });
 
-        transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-                console.error('Error sending OTP via email:', error);
-                res.status(500).json({ error: 'Failed to send OTP via email' });
-            } else {
-                console.log('OTP sent successfully via email:', info.response);
-                res.status(201).json({ status: 201, message: 'Signup successful', user });
-            }
-        });
-
-        // twilio
-        twilioClient.messages
-            .create({
-                body: `Your OTP for signup is: ${otp}`,
-                from: '+15739833421',
-                to: "+91" + mobileNumber,
-            })
-            .then((message) => {
-                console.log(`SMS sent with SID: ${message.sid}`);
-                res.status(201).json({ status: 201, message: "Signup successful", user, /*token*/ });
-            })
-            .catch((error) => {
-                console.error('Error sending SMS:', error);
-                res.status(500).json({ error: 'Failed to send OTP via SMS' });
-            });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to create user' });
@@ -161,22 +240,36 @@ const signup = async (req, res) => {
 
 
 const verifyOTP = async (req, res) => {
-    const { email, otp } = req.body;
-
+    const { email, mobileNumber, otp } = req.body;
     try {
-        if (!isValid(email)) {
-            return res.status(400).json({ status: 400, message: "Email is required" });
+        if (!isValid(email) && !isValid(mobileNumber)) {
+            return res.status(400).json({ status: 400, message: "Email or Mobile Number is required" });
         }
-        if (!emailRegex.test(email)) {
+
+        if (email && !emailRegex.test(email)) {
             return res.status(406).json({ status: 406, message: "Email Id is not valid" });
         }
-        const user = await vendorDb.findOne({ email });
+
+        if (mobileNumber && !mobileRegex.test(mobileNumber)) {
+            return res.status(406).json({ status: 406, message: "Mobile Number is not valid" });
+        }
+
+        let user = null;
+
+        if (email) {
+            user = await vendorDb.findOne({ email });
+        } else if (mobileNumber) {
+            user = await vendorDb.findOne({ mobileNumber });
+        }
+
         if (!user) {
             return res.status(404).json({ status: 404, message: "User not found" });
         }
+
         if (user.otp !== otp) {
             return res.status(401).json({ status: 401, message: "Invalid OTP" });
         }
+
         user.isVerified = true;
         await user.save();
 
@@ -188,17 +281,96 @@ const verifyOTP = async (req, res) => {
 };
 
 
+// const resendOTP = async (req, res) => {
+//     const { email, mobileNumber } = req.body;
+//     try {
+//         if (!isValid(email) && !isValid(mobileNumber)) {
+//             return res.status(400).json({ status: 400, message: "Email or Mobile Number is required" });
+//         }
+//         if (email && !emailRegex.test(email)) {
+//             return res.status(406).json({ status: 406, message: "Email Id is not valid" });
+//         }
+//         if (mobileNumber && !mobileRegex.test(mobileNumber)) {
+//             return res.status(406).json({ status: 406, message: "Mobile Number is not valid" });
+//         }
+//         let user = null;
+//         if (email) {
+//             user = await vendorDb.findOne({ email });
+//         } else if (mobileNumber) {
+//             user = await vendorDb.findOne({ mobileNumber });
+//         }
+//         if (!user) {
+//             return res.status(404).json({ status: 404, message: "User not found" });
+//         }
+//         const otp = Math.floor(100000 + Math.random() * 900000).toString();
+//         user.otp = otp;
+//         await user.save();
+
+//         if (email && mobileNumber) {
+//             const mailOptions = {
+//                 from: 'princegap001@gmail.com',
+//                 to: email,
+//                 subject: 'OTP for Signup',
+//                 text: `Your OTP for signup is: ${otp}`
+//             };
+//             console.log("mailoptions", mailOptions);
+//             transporter.sendMail(mailOptions, (error, info) => {
+//                 if (error) {
+//                     console.error('Error sending OTP via email:', error);
+//                     res.status(500).json({ error: 'Failed to send OTP via email' });
+//                 } else {
+//                     console.log('OTP sent successfully via email:', info.response);
+//                     sendOtpViaSMS(mobileNumber, otp, res);
+//                 }
+//             });
+//         } else if (email) {
+//             const mailOptions = {
+//                 from: 'princegap001@gmail.com',
+//                 to: email,
+//                 subject: 'OTP for Signup',
+//                 text: `Your OTP for signup is: ${otp}`
+//             };
+//             console.log("mailoptions", mailOptions);
+//             transporter.sendMail(mailOptions, (error, info) => {
+//                 if (error) {
+//                     console.error('Error sending OTP via email:', error);
+//                     res.status(500).json({ error: 'Failed to send OTP via email' });
+//                 } else {
+//                     console.log('OTP sent successfully via email:', info.response);
+//                     res.status(200).json({ status: 200, message: "OTP sent successfully" });
+//                 }
+//             });
+//         } else if (mobileNumber) {
+//             sendOtpViaSMS(mobileNumber, otp, res);
+//         }
+
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ error: 'Failed to resend OTP' });
+//     }
+// };
+
+
 const resendOTP = async (req, res) => {
-    const { email } = req.body;
+    const { email, mobileNumber } = req.body;
 
     try {
-        if (!isValid(email)) {
-            return res.status(400).json({ status: 400, message: "Email is required" });
+        if (!isValid(email) && !isValid(mobileNumber)) {
+            return res.status(400).json({ status: 400, message: "Email or Mobile Number is required" });
         }
-        if (!emailRegex.test(email)) {
+        if (email && !emailRegex.test(email)) {
             return res.status(406).json({ status: 406, message: "Email Id is not valid" });
         }
-        const user = await vendorDb.findOne({ email });
+        if (mobileNumber && !mobileRegex.test(mobileNumber)) {
+            return res.status(406).json({ status: 406, message: "Mobile Number is not valid" });
+        }
+        let user = null;
+
+        if (email) {
+            user = await vendorDb.findOne({ email });
+        } else if (mobileNumber) {
+            user = await vendorDb.findOne({ mobileNumber });
+        }
         if (!user) {
             return res.status(404).json({ status: 404, message: "User not found" });
         }
@@ -206,24 +378,32 @@ const resendOTP = async (req, res) => {
         user.otp = otp;
         await user.save();
 
-        const mailOptions = {
-            from: 'princegap001@gmail.com',
-            to: email,
-            subject: 'OTP for Signup',
-            text: `Your OTP for signup is: ${otp}`
-        };
-        console.log("mailoptions", mailOptions);
-        transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-                console.error('Error sending OTP via email:', error);
-                res.status(500).json({ error: 'Failed to send OTP via email' });
-            } else {
-                console.log('OTP sent successfully via email:', info.response);
-                // res.status(201).json({ status: 201, message: 'Signup successful', user });
+        if (email || mobileNumber) {
+            // Send OTP to both email and mobile
+            if (email) {
+                const mailOptions = {
+                    from: 'princegap001@gmail.com',
+                    to: email,
+                    subject: 'OTP for Signup',
+                    text: `Your OTP for signup is: ${otp}`
+                };
+                console.log("mailoptions", mailOptions);
+                transporter.sendMail(mailOptions, (error, info) => {
+                    if (error) {
+                        console.error('Error sending OTP via email:', error);
+                        res.status(500).json({ error: 'Failed to send OTP via email' });
+                    } else {
+                        console.log('OTP sent successfully via email:', info.response);
+                        sendOtpViaSMS(user.mobileNumber, otp, res);
+                    }
+                });
+            }
+            if (mobileNumber) {
                 sendOtpViaSMS(user.mobileNumber, otp, res);
             }
-
-        });
+        } else {
+            return res.status(400).json({ status: 400, message: "Email or Mobile Number is required" });
+        }
 
     } catch (error) {
         console.error(error);
@@ -274,8 +454,10 @@ const loginWithMobile = async (req, res) => {
 
         const availableCities = await City.find();
 
-        const token = jwt.sign({ userId: user._id }, process.env.USER_SECRET_KEY);
-
+        const payload = {
+            _id: user._id,
+        };
+        const token = jwt.sign(payload, process.env.VENDOR_SECRET_KEY/*, { expiresIn: '1h' }*/);
         await user.save();
 
         return res.status(200).json({
@@ -324,9 +506,11 @@ const loginWithEmail = async (req, res) => {
         user.isVerified = true;
 
         const availableCities = await City.find();
-
-        const token = jwt.sign({ userId: user._id }, process.env.USER_SECRET_KEY);
-
+   
+        const payload = {
+            _id: user._id,
+        };
+        const token = jwt.sign(payload, process.env.VENDOR_SECRET_KEY/*, { expiresIn: '1h' }*/);
         await user.save();
 
         return res.status(200).json({
@@ -378,20 +562,20 @@ const addToFavourites = async (req, res) => {
         }
 
         const { carId } = req.body;
-        const userId = req.params.userId;
+        const vendorId = req.params.vendorId;
         const car = await Car.findById(carId);
         if (!car) {
             return res.status(404).json({ status: 404, message: 'Car not found' });
         }
-        const user = await vendorDb.findById(userId);
-        console.log("userid", userId);
+        const user = await vendorDb.findById(vendorId);
+        console.log("userid", vendorId);
         if (!user || user.length === 0) {
             return res.status(404).json({ status: 404, message: 'No user found for this userId' });
         }
-        if (user.favouriteCars.includes(carId)) {
-            return res.status(400).json({ status: 400, message: 'Car is already in your favorites' });
-        }
-        user.favouriteCars.push(carId);
+        // if (user.favouriteCars.includes(carId)) {
+        //     return res.status(400).json({ status: 400, message: 'Car is already in your favorites' });
+        // }
+        // user.favouriteCars.push(carId);
         await user.save();
 
         res.status(200).json({ status: 200, message: 'Car added to favorites successfully' });
@@ -580,6 +764,106 @@ const updateOtherDocumentImage = async (req, res) => {
 };
 
 
+const getAllCars = async (req, res) => {
+    try {
+        const cars = await Car.find();
+        if (!cars) {
+            return res.status(404).json({ status: 404, message: 'No car found' })
+        }
+        return res.status(200).json({
+            status: 200,
+            message: 'Successfully retrieved all cars',
+            cars,
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Failed to retrieve cars' });
+    }
+};
+
+
+const getNewCars = async (req, res) => {
+    try {
+        const newCars = await Car.find().sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            status: 200,
+            message: 'Successfully retrieved new cars',
+            newCars,
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Failed to retrieve new cars' });
+    }
+};
+
+
+const getUsedCars = async (req, res) => {
+    try {
+        const usedCars = await Car.find({ isUsed: true }).sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            status: 200,
+            message: 'Successfully retrieved used cars',
+            usedCars,
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Failed to retrieve used cars' });
+    }
+};
+
+
+const searchCars = async (req, res) => {
+    try {
+        const { error } = searchValidationSchema.validate(req.query);
+        if (error) {
+            return res.status(400).json({ status: 400, message: error.details[0].message });
+        }
+        const { category, brand, model, location, pricerange } = req.query;
+        let query = {};
+
+        if (category === 'NewCar') {
+            query.isUsed = false;
+        } else if (category === 'UsedCar') {
+            query.isUsed = true;
+        }
+        if (brand) {
+            const foundBrand = await Car.findOne({ "brand.name": brand });
+            if (!foundBrand) {
+                return res.status(404).json({ status: 404, message: 'Brand not found' });
+            }
+            query.brand = foundBrand.brand;
+        }
+        if (model) {
+            query.model = model;
+        }
+        if (location) {
+            query.city = location;
+        }
+        if (pricerange) {
+            const [minPrice, maxPrice] = pricerange.split('-').map(Number);
+            query.price = { $gte: minPrice, $lte: maxPrice };
+        }
+        const cars = await Car.find(query).populate('brand').exec();
+        if (!cars || cars.length === 0) {
+            return res.status(404).json({ status: 404, message: 'No cars found' });
+        }
+        res.status(200).json({
+            status: 200,
+            message: 'Car search results',
+            cars,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to search for cars' });
+    }
+};
+
+
+
+
+
 
 
 
@@ -600,5 +884,9 @@ module.exports = {
     updateDocuments,
     updatePanCardImageImage,
     updateAadharCardImage,
-    updateOtherDocumentImage
+    updateOtherDocumentImage,
+    getAllCars,
+    getNewCars,
+    getUsedCars,
+    searchCars
 };

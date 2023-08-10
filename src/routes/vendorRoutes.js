@@ -2,9 +2,11 @@ require('dotenv').config()
 const express = require('express');
 const router = express.Router();
 
-const { signup, verifyOTP, resendOTP, loginWithMobile, loginWithEmail, selectCity, addToFavourites, updateWorkProfile, updateDocuments, updatePanCardImageImage, updateAadharCardImage, updateOtherDocumentImage } = require("../controller/vendorController");
+const { signup, verifyOTP, resendOTP, loginWithMobile, loginWithEmail, selectCity, addToFavourites, updateWorkProfile, updateDocuments, updatePanCardImageImage, updateAadharCardImage, updateOtherDocumentImage, getAllCars, getNewCars, getUsedCars, searchCars } = require("../controller/vendorController");
 
-const { authenticateUser, authorizeUser, authorization, authenticateAdmin } = require("../middleware/auth");
+const { authenticateVendor,
+    authorizeVendor,
+    vendorAuthorization } = require("../middleware/auth");
 const { createCity } = require('../controller/cityController');
 
 
@@ -16,13 +18,21 @@ router.post('/verify-otp', verifyOTP);
 router.post('/resend-otp', resendOTP);
 router.post('/login', loginWithMobile)
 router.post('/login-email', loginWithEmail)
-router.post('/selectCity', authenticateUser, selectCity)
-router.post('/favourite/:userId', authenticateUser, authorization, addToFavourites);
-router.put('/update-work-profile/:vendorId', updateWorkProfile);
-router.put('/update-documents/:vendorId', updateDocuments);
-router.put('/update/:vendorId/panCardImage', updatePanCardImageImage);
-router.put('/update/:vendorId/aadharCardImage', updateAadharCardImage);
-router.put('/update/:vendorId/otherDocumentImage', updateOtherDocumentImage);
+router.post('/selectCity', authenticateVendor, selectCity)
+router.post('/favourite/:vendorId', authenticateVendor, vendorAuthorization, addToFavourites);
+router.put('/update-work-profile/:vendorId', authenticateVendor, vendorAuthorization, updateWorkProfile);
+router.put('/update-documents/:vendorId', authenticateVendor, vendorAuthorization, updateDocuments);
+router.put('/update/:vendorId/panCardImage', authenticateVendor, vendorAuthorization, updatePanCardImageImage);
+router.put('/update/:vendorId/aadharCardImage', authenticateVendor, vendorAuthorization, updateAadharCardImage);
+router.put('/update/:vendorId/otherDocumentImage', authenticateVendor, vendorAuthorization, updateOtherDocumentImage);
+router.get('/cars', getAllCars);
+router.get('/new-cars', getNewCars);
+router.get('/used-cars', getUsedCars);
+router.get('/search', searchCars);
+
+
+
+
 
 
 

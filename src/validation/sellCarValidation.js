@@ -20,8 +20,6 @@ module.exports.sellCarSchema = Joi.object({
     year: Joi.number().integer().min(1900).max(new Date().getFullYear()).required(),
     mileage: Joi.number().integer().min(0).required(),
     owner: Joi.string().required(),
-    isUsed: Joi.boolean().required(),
-    isScrap: Joi.boolean().required(),
     color: Joi.string(),
     transmission: Joi.string(),
     engineSize: Joi.string(),
