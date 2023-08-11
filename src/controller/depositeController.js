@@ -1,10 +1,16 @@
 const SecurityDeposit = require('../model/depositeModel');
 const User = require('../model/userModel');
 
+const { createSecurityDepositValidationSchema } = require('../validation/depositeValidation');
+
 
 
 const createSecurityDeposit = async (req, res) => {
     try {
+        const { error } = createSecurityDepositValidationSchema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ status: 400, message: error.details[0].message });
+        }
         const { amount, biddingLimit } = req.body;
         const userId = req.params.userId;
 

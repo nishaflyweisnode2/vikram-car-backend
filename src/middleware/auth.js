@@ -13,7 +13,6 @@ const authenticateUser = (req, res, next) => {
   if (!token) {
     return res.status(401).json({ status: false, message: 'Authorization token not provided' });
   }
-
   try {
     const decoded = jwt.verify(token, process.env.USER_SECRET_KEY);
     req.user = decoded;
@@ -71,13 +70,12 @@ const authenticateAdmin = (req, res, next) => {
     return res.status(401).json({ status: false, message: 'Authorization token not provided' });
   }
   try {
-    const decoded = jwt.verify(token, process.env.ADMIN_SECRET_KEY);
+    const decoded = jwt.verify(token, process.env.USER_SECRET_KEY);
     if (decoded.userType !== 'Admin') {
       return res.status(403).json({ status: 403, message: 'You are not authorized to access this resource' });
     }
-    req.Admin = decoded;
+    req.user = decoded;
     next();
-
   } catch (error) {
     return res.status(403).json({ status: false, message: 'Invalid token' });
   }

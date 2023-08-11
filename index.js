@@ -35,9 +35,7 @@ app.get("/", (req, res) => {
     res.json("Hello !! TESTING DB Updated")
 });
 
-app.get("/prince", (req, res) => {
-    res.json("Hello !! TESTING DB prince Updated")
-});
+
 
 mongoose.connect(DB_URI, {
     useNewUrlParser: true,

@@ -295,14 +295,18 @@ const login = async (req, res) => {
 
         const availableCities = await City.find();
 
-        const token = jwt.sign({ userId: user._id }, process.env.USER_SECRET_KEY);
+        const payload = {
+            userId: user._id,
+            userType: user.userType,
+        };
+        const token = jwt.sign(payload, process.env.USER_SECRET_KEY);
 
         await user.save();
 
         return res.status(200).json({
             status: 200,
             message: "Login successful",
-            data: { user, token, availableCities },
+            data: { token, user, availableCities },
         });
     } catch (error) {
         console.error(error);

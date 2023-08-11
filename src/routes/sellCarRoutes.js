@@ -1,9 +1,13 @@
 const express = require('express');
 const router = express.Router();
+
 const { sellCar, updateSellCarImage } = require('../controller/sellCarController');
 
-router.post('/sellCar', sellCar);
-router.put('/update/:carId/image', updateSellCarImage);
+const { authenticateUser, authorizeUser, authorization, authenticateAdmin } = require("../middleware/auth");
+
+
+router.post('/sellCar', authenticateUser, sellCar);
+router.put('/update/:carId/image', authenticateUser, updateSellCarImage);
 
 
 module.exports = router;

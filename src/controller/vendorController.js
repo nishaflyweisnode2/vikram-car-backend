@@ -463,7 +463,7 @@ const loginWithMobile = async (req, res) => {
         return res.status(200).json({
             status: 200,
             message: "Login successful",
-            data: { user, token, availableCities },
+            data: { token, user, availableCities },
         });
     } catch (error) {
         console.error(error);
@@ -506,7 +506,7 @@ const loginWithEmail = async (req, res) => {
         user.isVerified = true;
 
         const availableCities = await City.find();
-   
+
         const payload = {
             _id: user._id,
         };
@@ -516,7 +516,7 @@ const loginWithEmail = async (req, res) => {
         return res.status(200).json({
             status: 200,
             message: "Login successful",
-            data: { user, token, availableCities },
+            data: { token, user, availableCities },
         });
     } catch (error) {
         console.error(error);

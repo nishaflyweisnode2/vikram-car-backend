@@ -24,7 +24,7 @@ router.put('/update/:userId/profileImage', authenticateUser, authorization, upda
 
 
 //cityName
-router.post('/cities', createCity)
+router.post('/cities', authenticateUser, authenticateAdmin, createCity)
 
 
 

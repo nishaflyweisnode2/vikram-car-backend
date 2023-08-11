@@ -110,13 +110,14 @@ const buySubscription = async (req, res) => {
 
 const getAllSubscriptions = async (req, res) => {
     try {
-        const subscriptions = await Subscription.find().populate('user');
+        const subscriptions = await Subscription.find({ status: 'subscribed' }).populate('user');
         res.status(200).json({ status: 200, subscriptions });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to fetch subscriptions' });
     }
 };
+
 
 
 

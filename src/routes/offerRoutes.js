@@ -1,10 +1,14 @@
 const express = require('express');
 const router = express.Router();
+
 const { createOffer, getAllOffers } = require('../controller/offerController');
 
+const { authenticateUser, authorizeUser, authorization, authenticateAdmin } = require("../middleware/auth");
 
-router.post('/create', createOffer);
-router.get('/offers', getAllOffers);
+
+
+router.post('/create', authenticateUser, authenticateAdmin, createOffer);
+router.get('/offers', authenticateUser, getAllOffers);
 
 
 

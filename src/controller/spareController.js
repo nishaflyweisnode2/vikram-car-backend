@@ -220,8 +220,6 @@ const updateSpareImage = async (req, res) => {
     }
 };
 
-module.exports = updateSpareImage;
-
 
 
 

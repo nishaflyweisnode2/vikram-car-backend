@@ -2,21 +2,6 @@ const Joi = require('joi');
 const mongoose = require('mongoose');
 
 
-// module.exports.addToFavouritesSchema = Joi.object({
-//     userId: Joi.string().custom((value, helpers) => {
-//         if (!mongoose.isValidObjectId(value)) {
-//             return helpers.error('any.invalid');
-//         }
-//         return value;
-//     }).required(),
-//     carId: Joi.string().custom((value, helpers) => {
-//         if (!mongoose.isValidObjectId(value)) {
-//             return helpers.error('any.invalid');
-//         }
-//         return value;
-//     }).required(),
-// }),
-
 
 module.exports.addToFavouritesSchema = Joi.object({
     carId: Joi.string()

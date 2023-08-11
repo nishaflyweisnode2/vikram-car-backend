@@ -5,12 +5,11 @@ const { authenticateUser, authorizeUser, authorization, authenticateAdmin } = re
 
 
 
-// Route for creating a new car
-router.post('/create-car', createCar);
-router.put('/update/:carId/image', updateCarImage);
-router.get('/cars/:buyingOption', getCarsByBuyingOption);
-router.get('/search', searchCars);
-router.get('/compare', compareCars);
+router.post('/create-car', authenticateUser, authenticateAdmin, createCar);
+router.put('/update/:carId/image', authenticateUser, authenticateAdmin, updateCarImage);
+router.get('/cars/:buyingOption', authenticateUser, getCarsByBuyingOption);
+router.get('/search', authenticateUser, searchCars);
+router.get('/compare', authenticateUser, compareCars);
 router.post('/buyCar/:userId', authenticateUser, authorization, buyCar);
 
 

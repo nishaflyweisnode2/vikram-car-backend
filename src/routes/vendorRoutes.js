@@ -25,10 +25,10 @@ router.put('/update-documents/:vendorId', authenticateVendor, vendorAuthorizatio
 router.put('/update/:vendorId/panCardImage', authenticateVendor, vendorAuthorization, updatePanCardImageImage);
 router.put('/update/:vendorId/aadharCardImage', authenticateVendor, vendorAuthorization, updateAadharCardImage);
 router.put('/update/:vendorId/otherDocumentImage', authenticateVendor, vendorAuthorization, updateOtherDocumentImage);
-router.get('/cars', getAllCars);
-router.get('/new-cars', getNewCars);
-router.get('/used-cars', getUsedCars);
-router.get('/search', searchCars);
+router.get('/cars', authenticateVendor, getAllCars);
+router.get('/new-cars', authenticateVendor, getNewCars);
+router.get('/used-cars', authenticateVendor, getUsedCars);
+router.get('/search', authenticateVendor, searchCars);
 
 
 
