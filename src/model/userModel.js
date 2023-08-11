@@ -1,3 +1,4 @@
+const { string } = require('joi');
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
@@ -39,6 +40,19 @@ const userSchema = new mongoose.Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Car',
         }
+    ],
+    carRating: [
+        {
+            carId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Car',
+            },
+            rating: {
+                type: Number,
+                min: 0,
+                max: 5,
+            },
+        },
     ],
     myBids: [
         {

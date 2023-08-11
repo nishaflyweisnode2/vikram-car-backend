@@ -272,5 +272,103 @@ const buyCar = async (req, res) => {
 
 
 
+// const addCarRating = async (req, res) => {
+//     try {
+//         const { userId } = req.params;
+//         const { carId, rating } = req.body;
 
-module.exports = { createCar, updateCarImage, getCarsByBuyingOption, searchCars, compareCars, buyCar };
+
+//         if (rating < 1 || rating > 5) {
+//             return res.status(400).json({ status: 400, message: 'Rating must be between 1 and 5' });
+//         }
+//         if (!carId || !rating) {
+//             return res.status(400).json({ status: 400, message: 'Car ID and rating are required' });
+//         }
+//         const user = await userDb.findById(userId);
+//         if (!user) {
+//             return res.status(404).json({ status: 404, message: 'User not found' });
+//         }
+//         const car = await Car.findById(carId);
+//         if (!car) {
+//             return res.status(404).json({ status: 404, message: 'Car not found' });
+//         }
+
+//         user.carRating.push({ carId, rating });
+//         const totalRatings = user.carRating.length;
+//         const totalRatingSum = user.carRating.reduce((sum, r) => sum + r.rating, 0);
+
+//         car.averageRating = totalRatingSum / totalRatings;
+//         await user.save();
+//         await car.save();
+
+//         res.status(200).json({ status: 200, message: 'Car rating updated successfully', car });
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ error: 'Failed to update car rating' });
+//     }
+// };
+
+
+const addCarRating = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { carId, rating } = req.body;
+
+        if (!carId || !rating) {
+            return res.status(400).json({ status: 400, message: 'Car ID and rating are required' });
+        }
+        if (rating < 1 || rating > 5) {
+            return res.status(400).json({ status: 400, message: 'Rating must be between 1 and 5' });
+        }
+        const user = await userDb.findById(userId);
+        if (!user) {
+            return res.status(404).json({ status: 404, message: 'User not found' });
+        }
+        const car = await Car.findById(carId);
+        if (!car) {
+            return res.status(404).json({ status: 404, message: 'Car not found' });
+        }
+
+        user.carRating.push({ carId, rating });
+        await user.save();
+
+        const allUsers = await userDb.find();
+        const ratingsForCar = allUsers.flatMap(user =>
+            user.carRating.filter(rating => rating.carId.toString() === carId)
+        );
+        const totalRatings = ratingsForCar.length;
+        const totalRatingSum = ratingsForCar.reduce((sum, r) => sum + r.rating, 0);
+
+        car.averageRating = totalRatingSum / totalRatings;
+        await car.save();
+
+        res.status(200).json({ status: 200, message: 'Car rating updated successfully', car });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to update car rating' });
+    }
+};
+
+
+
+const getCarRatings = async (req, res) => {
+    try {
+        const { carId } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(carId)) {
+            return res.status(400).json({ status: 400, message: 'Invalid car ID' });
+        }
+        const car = await Car.findById(carId);
+        if (!car) {
+            return res.status(404).json({ status: 404, message: 'Car not found' });
+        }
+
+        res.status(200).json({ status: 200, averageRating: car.averageRating });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to fetch car ratings' });
+    }
+};
+
+
+module.exports = { createCar, updateCarImage, getCarsByBuyingOption, searchCars, compareCars, buyCar, addCarRating, getCarRatings };
