@@ -351,6 +351,67 @@ const verifyOTP = async (req, res) => {
 // };
 
 
+// const resendOTP = async (req, res) => {
+//     const { email, mobileNumber } = req.body;
+
+//     try {
+//         if (!isValid(email) && !isValid(mobileNumber)) {
+//             return res.status(400).json({ status: 400, message: "Email or Mobile Number is required" });
+//         }
+//         if (email && !emailRegex.test(email)) {
+//             return res.status(406).json({ status: 406, message: "Email Id is not valid" });
+//         }
+//         if (mobileNumber && !mobileRegex.test(mobileNumber)) {
+//             return res.status(406).json({ status: 406, message: "Mobile Number is not valid" });
+//         }
+//         let user = null;
+
+//         if (email) {
+//             user = await vendorDb.findOne({ email });
+//         } else if (mobileNumber) {
+//             user = await vendorDb.findOne({ mobileNumber });
+//         }
+//         if (!user) {
+//             return res.status(404).json({ status: 404, message: "User not found" });
+//         }
+//         const otp = Math.floor(100000 + Math.random() * 900000).toString();
+//         user.otp = otp;
+//         await user.save();
+
+//         if (email || mobileNumber) {
+//             // Send OTP to both email and mobile
+//             if (email) {
+//                 const mailOptions = {
+//                     from: 'princegap001@gmail.com',
+//                     to: email,
+//                     subject: 'OTP for Signup',
+//                     text: `Your OTP for signup is: ${otp}`
+//                 };
+//                 console.log("mailoptions", mailOptions);
+//                 transporter.sendMail(mailOptions, (error, info) => {
+//                     if (error) {
+//                         console.error('Error sending OTP via email:', error);
+//                         res.status(500).json({ error: 'Failed to send OTP via email' });
+//                     } else {
+//                         console.log('OTP sent successfully via email:', info.response);
+//                         sendOtpViaSMS(user.mobileNumber, otp, res);
+//                     }
+//                 });
+//             }
+//             if (mobileNumber) {
+//                 sendOtpViaSMS(user.mobileNumber, otp, res);
+//             }
+//         } else {
+//             return res.status(400).json({ status: 400, message: "Email or Mobile Number is required" });
+//         }
+
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ error: 'Failed to resend OTP' });
+//     }
+// };
+
+
 const resendOTP = async (req, res) => {
     const { email, mobileNumber } = req.body;
 
@@ -379,28 +440,7 @@ const resendOTP = async (req, res) => {
         await user.save();
 
         if (email || mobileNumber) {
-            // Send OTP to both email and mobile
-            if (email) {
-                const mailOptions = {
-                    from: 'princegap001@gmail.com',
-                    to: email,
-                    subject: 'OTP for Signup',
-                    text: `Your OTP for signup is: ${otp}`
-                };
-                console.log("mailoptions", mailOptions);
-                transporter.sendMail(mailOptions, (error, info) => {
-                    if (error) {
-                        console.error('Error sending OTP via email:', error);
-                        res.status(500).json({ error: 'Failed to send OTP via email' });
-                    } else {
-                        console.log('OTP sent successfully via email:', info.response);
-                        sendOtpViaSMS(user.mobileNumber, otp, res);
-                    }
-                });
-            }
-            if (mobileNumber) {
-                sendOtpViaSMS(user.mobileNumber, otp, res);
-            }
+            res.status(200).json({ status: 200, message: 'OTP generated and saved in the database' });
         } else {
             return res.status(400).json({ status: 400, message: "Email or Mobile Number is required" });
         }

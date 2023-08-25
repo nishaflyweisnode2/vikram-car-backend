@@ -54,6 +54,92 @@ const upload = multer({ storage: storage }).array('profileImage', 2);
 // upload image End
 
 
+// const signup = async (req, res) => {
+//     const { fullName, email, mobileNumber } = req.body;
+
+//     try {
+//         if (!isValidBody(req.body)) {
+//             return res.status(400).json({ status: 400, message: "Body can't be empty, please enter some data" });
+//         }
+//         if (!nameRegex.test(fullName)) {
+//             return res.status(406).json({ status: 406, message: "First name is not valid" });
+//         }
+//         if (!isValid(fullName)) {
+//             return res.status(400).json({ status: 400, message: "Email is required" });
+//         }
+//         if (!isValid(email)) {
+//             return res.status(400).json({ status: 400, message: "Email is required" });
+//         }
+//         if (!emailRegex.test(email)) {
+//             return res.status(406).json({ status: 406, message: "Email Id is not valid" });
+//         }
+//         if (!isValid(mobileNumber)) {
+//             return res.status(406).json({ status: 406, message: "Mobile Number is required" });
+//         }
+//         if (!mobileRegex.test(mobileNumber)) {
+//             return res.status(406).json({ status: 406, message: "Mobile Number is not valid" });
+//         }
+//         const existingMobile = await userDb.findOne({ mobileNumber })
+//         if (existingMobile) {
+//             return res.status(400).json({ status: 400, message: "Mobile Number already exists" });
+//         }
+//         const existingUser = await userDb.findOne({ email });
+//         if (existingUser) {
+//             return res.status(400).json({ status: 400, message: "Email already exists" });
+//         }
+
+//         const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+//         const user = new userDb({
+//             fullName,
+//             email,
+//             mobileNumber,
+//             otp,
+//             profileImage: '.',
+//         });
+
+//         await user.save();
+
+//         //nodemailer
+//         const mailOptions = {
+//             from: 'princegap001@gmail.com',
+//             to: email,
+//             subject: 'OTP for Signup',
+//             text: `Your OTP for signup is: ${otp}`
+//         };
+//         console.log("mailoptions", mailOptions);
+
+//         transporter.sendMail(mailOptions, (error, info) => {
+//             if (error) {
+//                 console.error('Error sending OTP via email:', error);
+//                 res.status(500).json({ error: 'Failed to send OTP via email' });
+//             } else {
+//                 console.log('OTP sent successfully via email:', info.response);
+//                 res.status(201).json({ status: 201, message: 'Signup successful', user });
+//             }
+//         });
+
+//         // twilio
+//         // twilioClient.messages
+//         //     .create({
+//         //         body: `Your OTP for signup is: ${otp}`,
+//         //         from: '+15739833421',
+//         //         to: "+91" + mobileNumber,
+//         //     })
+//         //     .then((message) => {
+//         //         console.log(`SMS sent with SID: ${message.sid}`);
+//         //         res.status(201).json({ status: 201, message: "Signup successful", user, /*token*/ });
+//         //     })
+//         //     .catch((error) => {
+//         //         console.error('Error sending SMS:', error);
+//         //         res.status(500).json({ error: 'Failed to send OTP via SMS' });
+//         //     });
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ error: 'Failed to create user' });
+//     }
+// };
+
 const signup = async (req, res) => {
     const { fullName, email, mobileNumber } = req.body;
 
@@ -63,9 +149,6 @@ const signup = async (req, res) => {
         }
         if (!nameRegex.test(fullName)) {
             return res.status(406).json({ status: 406, message: "First name is not valid" });
-        }
-        if (!isValid(fullName)) {
-            return res.status(400).json({ status: 400, message: "Email is required" });
         }
         if (!isValid(email)) {
             return res.status(400).json({ status: 400, message: "Email is required" });
@@ -100,40 +183,26 @@ const signup = async (req, res) => {
 
         await user.save();
 
-        //nodemailer
-        const mailOptions = {
-            from: 'princegap001@gmail.com',
-            to: email,
-            subject: 'OTP for Signup',
-            text: `Your OTP for signup is: ${otp}`
-        };
-        console.log("mailoptions", mailOptions);
+        // Commenting out the email sending logic
+        // const mailOptions = {
+        //     from: 'princegap001@gmail.com',
+        //     to: email,
+        //     subject: 'OTP for Signup',
+        //     text: `Your OTP for signup is: ${otp}`
+        // };
+        // console.log("mailoptions", mailOptions);
+        // transporter.sendMail(mailOptions, (error, info) => {
+        //     if (error) {
+        //         console.error('Error sending OTP via email:', error);
+        //         res.status(500).json({ error: 'Failed to send OTP via email' });
+        //     } else {
+        //         console.log('OTP sent successfully via email:', info.response);
+        //         res.status(201).json({ status: 201, message: 'Signup successful', user });
+        //     }
+        // });
 
-        transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-                console.error('Error sending OTP via email:', error);
-                res.status(500).json({ error: 'Failed to send OTP via email' });
-            } else {
-                console.log('OTP sent successfully via email:', info.response);
-                res.status(201).json({ status: 201, message: 'Signup successful', user });
-            }
-        });
+        res.status(201).json({ status: 201, message: 'Signup successful', user });
 
-        // twilio
-        twilioClient.messages
-            .create({
-                body: `Your OTP for signup is: ${otp}`,
-                from: '+15739833421',
-                to: "+91" + mobileNumber,
-            })
-            .then((message) => {
-                console.log(`SMS sent with SID: ${message.sid}`);
-                res.status(201).json({ status: 201, message: "Signup successful", user, /*token*/ });
-            })
-            .catch((error) => {
-                console.error('Error sending SMS:', error);
-                res.status(500).json({ error: 'Failed to send OTP via SMS' });
-            });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to create user' });
@@ -169,6 +238,50 @@ const verifyOTP = async (req, res) => {
 };
 
 
+// const resendOTP = async (req, res) => {
+//     const { email } = req.body;
+
+//     try {
+//         if (!isValid(email)) {
+//             return res.status(400).json({ status: 400, message: "Email is required" });
+//         }
+//         if (!emailRegex.test(email)) {
+//             return res.status(406).json({ status: 406, message: "Email Id is not valid" });
+//         }
+//         const user = await userDb.findOne({ email });
+//         if (!user) {
+//             return res.status(404).json({ status: 404, message: "User not found" });
+//         }
+//         const otp = Math.floor(100000 + Math.random() * 900000).toString();
+//         user.otp = otp;
+//         await user.save();
+
+//         const mailOptions = {
+//             from: 'princegap001@gmail.com',
+//             to: email,
+//             subject: 'OTP for Signup',
+//             text: `Your OTP for signup is: ${otp}`
+//         };
+//         console.log("mailoptions", mailOptions);
+//         transporter.sendMail(mailOptions, (error, info) => {
+//             if (error) {
+//                 console.error('Error sending OTP via email:', error);
+//                 res.status(500).json({ error: 'Failed to send OTP via email' });
+//             } else {
+//                 console.log('OTP sent successfully via email:', info.response);
+//                 // res.status(201).json({ status: 201, message: 'Signup successful', user });
+//                 // sendOtpViaSMS(user.mobileNumber, otp, res);
+//             }
+
+//         });
+
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ error: 'Failed to resend OTP' });
+//     }
+// };
+
+
 const resendOTP = async (req, res) => {
     const { email } = req.body;
 
@@ -187,30 +300,14 @@ const resendOTP = async (req, res) => {
         user.otp = otp;
         await user.save();
 
-        const mailOptions = {
-            from: 'princegap001@gmail.com',
-            to: email,
-            subject: 'OTP for Signup',
-            text: `Your OTP for signup is: ${otp}`
-        };
-        console.log("mailoptions", mailOptions);
-        transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-                console.error('Error sending OTP via email:', error);
-                res.status(500).json({ error: 'Failed to send OTP via email' });
-            } else {
-                console.log('OTP sent successfully via email:', info.response);
-                // res.status(201).json({ status: 201, message: 'Signup successful', user });
-                sendOtpViaSMS(user.mobileNumber, otp, res);
-            }
-
-        });
+        res.status(200).json({ status: 200, message: 'Resend OTP generated sucessfully' });
 
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to resend OTP' });
     }
 };
+
 
 
 const sendOtpViaSMS = (mobileNumber, otp, res) => {
