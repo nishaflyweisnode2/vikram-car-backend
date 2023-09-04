@@ -285,18 +285,12 @@ const verifyOTP = async (req, res) => {
 
 
 const resendOTP = async (req, res) => {
-    const { email } = req.body;
+    const { userId } = req.params;
 
     try {
-        if (!isValid(email)) {
-            return res.status(400).json({ status: 400, message: "Email is required" });
-        }
-        if (!emailRegex.test(email)) {
-            return res.status(406).json({ status: 406, message: "Email Id is not valid" });
-        }
-        const user = await userDb.findOne({ email });
+        const user = await userDb.findById({ _id: userId })
         if (!user) {
-            return res.status(404).json({ status: 404, message: "User not found" });
+            return res.status(400).json({ status: 400, message: "userId not found" });
         }
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         user.otp = otp;
