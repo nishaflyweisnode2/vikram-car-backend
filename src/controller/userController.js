@@ -215,11 +215,12 @@ const verifyOTP = async (req, res) => {
     const { otp } = req.body;
 
     try {
-        const user = await userDb.findOne({ UserId });
+        const user = await userDb.findById({ _id:UserId });
         if (!user) {
             return res.status(404).json({ status: 404, message: "User not found" });
         }
-        if (user.otp !== otp) {
+        console.log(user ,"",otp);
+        if (user.otp != otp) {
             return res.status(401).json({ status: 401, message: "Invalid OTP" });
         }
         const payload = {
@@ -384,7 +385,9 @@ const login = async (req, res) => {
         if (!user) {
             return res.status(401).json({ status: 401, message: "Invalid mobileNumber" });
         }
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
         user.isVerified = true;
+        user.otp = otp;
 
         const availableCities = await City.find();
 
@@ -393,7 +396,7 @@ const login = async (req, res) => {
 
         const obj = {
             ID: user._id,
-            OTP: user.otp,
+            OTP: otp,
             mobileNumber: user.mobileNumber
         }
 
