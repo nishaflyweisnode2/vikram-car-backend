@@ -221,10 +221,16 @@ const verifyOTP = async (req, res) => {
         if (user.otp !== otp) {
             return res.status(401).json({ status: 401, message: "Invalid OTP" });
         }
+        const payload = {
+            userId: user._id,
+            userType: user.userType,
+        };
+        const token = jwt.sign(payload, process.env.USER_SECRET_KEY);
+
         user.isVerified = true;
         await user.save();
 
-        res.status(200).json({ status: 200, message: "OTP verified successfully" });
+        res.status(200).json({ status: 200, message: "OTP verified successfully", data: { token, user } });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to verify OTP' });
@@ -381,18 +387,12 @@ const login = async (req, res) => {
 
         const availableCities = await City.find();
 
-        const payload = {
-            userId: user._id,
-            userType: user.userType,
-        };
-        const token = jwt.sign(payload, process.env.USER_SECRET_KEY);
 
         await user.save();
 
         return res.status(200).json({
             status: 200,
-            message: "Login successful",
-            data: { token, user, availableCities },
+            message: "Enter your otp",
         });
     } catch (error) {
         console.error(error);
