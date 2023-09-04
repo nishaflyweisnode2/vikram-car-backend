@@ -11,7 +11,7 @@ const { createCity } = require('../controller/cityController');
 
 // user
 router.post('/signup', signup);
-router.post('/verify-otp', verifyOTP);
+router.post('/verify-otp/:userId', verifyOTP);
 router.post('/resend-otp', resendOTP);
 router.post('/login', login)
 router.post('/selectCity', authenticateUser, selectCity)

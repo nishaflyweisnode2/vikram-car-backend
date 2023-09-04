@@ -211,10 +211,11 @@ const signup = async (req, res) => {
 
 
 const verifyOTP = async (req, res) => {
+    const UserId = req.params.userId
     const { otp } = req.body;
 
     try {
-        const user = await userDb.findOne({ otp });
+        const user = await userDb.findOne({ UserId });
         if (!user) {
             return res.status(404).json({ status: 404, message: "User not found" });
         }
@@ -390,9 +391,16 @@ const login = async (req, res) => {
 
         await user.save();
 
+        const obj = {
+            ID: user._id,
+            OTP: user.otp,
+            mobileNumber: user.mobileNumber
+        }
+
         return res.status(200).json({
             status: 200,
             message: "Sent OTP in Your Mobile",
+            data: obj
         });
     } catch (error) {
         console.error(error);
