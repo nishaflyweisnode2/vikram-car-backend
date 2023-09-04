@@ -18,4 +18,19 @@ const createCity = async (req, res) => {
 };
 
 
-module.exports = { createCity };
+const getAllCity = async (req, res) => {
+    try {
+        const cities = await City.find();
+        if (!cities || cities.length === 0) {
+            return res.status(404).json({ status: 404, message: "No cities found" });
+        }
+
+        return res.status(200).json({ status: 200, data: cities });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Failed to fetch cities' });
+    }
+};
+
+
+module.exports = { createCity, getAllCity };

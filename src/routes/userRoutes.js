@@ -4,7 +4,7 @@ const router = express.Router();
 
 const { signup, verifyOTP, resendOTP, login, selectCity, addToFavourites, addMyBid, getMyWins, updateProfileImage } = require("../controller/userController");
 const { authenticateUser, authorizeUser, authorization, authenticateAdmin } = require("../middleware/auth");
-const { createCity } = require('../controller/cityController');
+const { createCity, getAllCity } = require('../controller/cityController');
 
 
 
@@ -25,6 +25,8 @@ router.put('/update/:userId/profileImage', authenticateUser, authorization, upda
 
 //cityName
 router.post('/cities', authenticateUser, authenticateAdmin, createCity)
+router.get('/getAllCity', authenticateUser, getAllCity);
+
 
 
 
