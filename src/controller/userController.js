@@ -392,7 +392,7 @@ const login = async (req, res) => {
 
         return res.status(200).json({
             status: 200,
-            message: "Enter your otp",
+            message: "Sent OTP in Your Mobile",
         });
     } catch (error) {
         console.error(error);
