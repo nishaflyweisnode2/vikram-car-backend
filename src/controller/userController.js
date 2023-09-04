@@ -211,16 +211,10 @@ const signup = async (req, res) => {
 
 
 const verifyOTP = async (req, res) => {
-    const { email, otp } = req.body;
+    const { otp } = req.body;
 
     try {
-        if (!isValid(email)) {
-            return res.status(400).json({ status: 400, message: "Email is required" });
-        }
-        if (!emailRegex.test(email)) {
-            return res.status(406).json({ status: 406, message: "Email Id is not valid" });
-        }
-        const user = await userDb.findOne({ email });
+        const user = await userDb.findOne({ otp });
         if (!user) {
             return res.status(404).json({ status: 404, message: "User not found" });
         }
@@ -300,7 +294,7 @@ const resendOTP = async (req, res) => {
         user.otp = otp;
         await user.save();
 
-        res.status(200).json({ status: 200, message: 'Resend OTP generated sucessfully' });
+        res.status(200).json({ status: 200, message: 'Resend OTP generated sucessfully', data: user.otp });
 
     } catch (error) {
         console.error(error);
@@ -371,7 +365,7 @@ const sendOtpViaSMS = (mobileNumber, otp, res) => {
 const login = async (req, res) => {
     try {
         const data = req.body;
-        const { mobileNumber, otp } = data;
+        const { mobileNumber } = data;
         if (!isValidBody(data)) return res.status(400).json({ status: 400, message: "Body can't be empty, please enter some data" });
         if (!isValid(mobileNumber)) {
             return res.status(406).json({ status: 406, message: "Mobile Number is required" });
@@ -379,14 +373,9 @@ const login = async (req, res) => {
         if (!mobileRegex.test(mobileNumber)) {
             return res.status(406).json({ status: 406, message: "Mobile Number is not valid" });
         }
-        if (!isValid(otp)) return res.status(400).json({ status: 400, message: "Otp is required" });
-
         const user = await userDb.findOne({ mobileNumber });
         if (!user) {
             return res.status(401).json({ status: 401, message: "Invalid mobileNumber" });
-        }
-        if (user.otp !== otp) {
-            return res.status(401).json({ status: 401, message: "Invalid OTP" });
         }
         user.isVerified = true;
 
