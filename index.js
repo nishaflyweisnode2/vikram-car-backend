@@ -18,6 +18,8 @@ const subscriptionRoutes = require('./src/routes/suscriptionRoutes');
 const offerRoutes = require('./src/routes/offerRoutes');
 const vendorRoutes = require('./src/routes/vendorRoutes');
 const depositeRoutes = require('./src/routes/depositeRoutes');
+const bannerRoutes = require('./src/routes/bannerRoute');
+
 
 
 
@@ -66,6 +68,7 @@ app.use('/subscription', subscriptionRoutes);
 app.use('/offer', offerRoutes);
 app.use('/vendor', vendorRoutes);
 app.use('/deposite', depositeRoutes);
+app.use('/banner', bannerRoutes);
 
 
 

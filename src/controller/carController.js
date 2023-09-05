@@ -107,6 +107,37 @@ const createCar = async (req, res) => {
 
 
 
+const getCars = async (req, res) => {
+    try {
+        const cars = await Car.find().populate('brand');
+
+        res.status(200).json({ status: 200, cars });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to fetch cars' });
+    }
+};
+
+
+
+
+const getCarById = async (req, res) => {
+    try {
+        const carId = req.params.carId;
+        const car = await Car.findById(carId).populate('brand');
+
+        if (!car) {
+            return res.status(404).json({ status: 404, message: 'Car not found' });
+        }
+
+        res.status(200).json({ status: 200, car });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to fetch the car' });
+    }
+};
+
+
 const updateCarImage = async (req, res) => {
     try {
         upload(req, res, async (err) => {
@@ -371,4 +402,4 @@ const getCarRatings = async (req, res) => {
 };
 
 
-module.exports = { createCar, updateCarImage, getCarsByBuyingOption, searchCars, compareCars, buyCar, addCarRating, getCarRatings };
+module.exports = { createCar, getCars, getCarById, updateCarImage, getCarsByBuyingOption, searchCars, compareCars, buyCar, addCarRating, getCarRatings };

@@ -62,9 +62,37 @@ const createAuction = async (req, res) => {
 
 
 
+const getAuctions = async (req, res) => {
+    try {
+        const auctions = await Auction.find();
+        res.status(200).json({ status: 200, auctions }).populate('car winner');
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to fetch auctions' });
+    }
+};
+
+const getAuctionById = async (req, res) => {
+    try {
+        const auction = await Auction.findById(req.params.auctionId).populate('car winner');
+
+        if (!auction) {
+            return res.status(404).json({ status: 404, message: 'Auction not found' });
+        }
+
+        res.status(200).json({ status: 200, auction });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to fetch the auction' });
+    }
+};
+
+
 
 
 
 module.exports = {
     createAuction,
+    getAuctions,
+    getAuctionById
 };

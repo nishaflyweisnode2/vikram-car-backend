@@ -622,6 +622,42 @@ const updateProfileImage = async (req, res) => {
 
 
 
+const getFavoriteCars = async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const user = await userDb.findById(userId);
+
+        if (!user || user.length === 0) {
+            return res.status(404).json({ status: 404, message: 'No user found for this userId' });
+        }
+        const favoriteCarIds = user.favouriteCars;
+        const favoriteCars = await Car.find({ _id: { $in: favoriteCarIds } });
+
+        res.status(200).json({ status: 200, favoriteCars });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to fetch favorite cars' });
+    }
+};
+
+
+const getMyBids = async (req, res) => {
+    try {
+      const userId = req.params.userId;
+      const user = await userDb.findById(userId);
+  
+      if (!user || user.length === 0) {
+        return res.status(404).json({ status: 404, message: 'No user found for this userId' });
+      }
+        const myBids = user.myBids;
+  
+      res.status(200).json({ status: 200, myBids });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to fetch user bids' });
+    }
+  };
+
 
 
 
@@ -635,5 +671,7 @@ module.exports = {
     addToFavourites,
     addMyBid,
     getMyWins,
-    updateProfileImage
+    updateProfileImage,
+    getFavoriteCars,
+    getMyBids
 };
