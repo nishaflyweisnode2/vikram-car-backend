@@ -130,4 +130,18 @@ const updateSellCarImage = async (req, res) => {
 
 
 
-module.exports = { sellCar, updateSellCarImage };
+const getAllSellCars = async (req, res) => {
+    try {
+        const sellCars = await sellCarDb.find().populate('brand');
+
+        res.status(200).json({ status: 200, sellCars });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to fetch sell cars' });
+    }
+};
+
+
+
+
+module.exports = { sellCar, updateSellCarImage, getAllSellCars };

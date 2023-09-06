@@ -19,6 +19,7 @@ const offerRoutes = require('./src/routes/offerRoutes');
 const vendorRoutes = require('./src/routes/vendorRoutes');
 const depositeRoutes = require('./src/routes/depositeRoutes');
 const bannerRoutes = require('./src/routes/bannerRoute');
+const quotesRoutes = require('./src/routes/quotesRoutes');
 
 
 
@@ -69,6 +70,7 @@ app.use('/offer', offerRoutes);
 app.use('/vendor', vendorRoutes);
 app.use('/deposite', depositeRoutes);
 app.use('/banner', bannerRoutes);
+app.use('/quotes', quotesRoutes);
 
 
 
