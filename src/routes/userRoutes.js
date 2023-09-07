@@ -38,7 +38,7 @@ router.post('/autobid/cancel/:auctionId', authenticateUser, cancelAutobid);
 
 //cityName
 router.post('/cities', authenticateUser, authenticateAdmin, upload.single('image'), createCity)
-router.get('/getAllCity', authenticateUser, getAllCity);
+router.get('/cities/getAllCity', authenticateUser, getAllCity);
 
 
 
