@@ -52,6 +52,19 @@ const createBrand = async (req, res) => {
 
 
 
+const getAllBrands = async (req, res) => {
+    try {
+        const brands = await Brand.find();
+
+        res.status(200).json({ status: 200, message: 'All brands retrieved successfully', brands });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to fetch brands' });
+    }
+};
+
+
+
 
 
 
@@ -59,5 +72,6 @@ const createBrand = async (req, res) => {
 
 module.exports = {
     createBrand,
-    upload
+    upload,
+    getAllBrands
 };
