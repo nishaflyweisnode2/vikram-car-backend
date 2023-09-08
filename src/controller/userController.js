@@ -872,14 +872,38 @@ const getFavoriteCars = async (req, res) => {
 };
 
 
+// const getMyBids = async (req, res) => {
+//     try {
+//         const userId = req.params.userId;
+//         const user = await userDb.findById(userId);
+
+//         if (!user || user.length === 0) {
+//             return res.status(404).json({ status: 404, message: 'No user found for this userId' });
+//         }
+//         const myBids = user.myBids;
+
+//         res.status(200).json({ status: 200, myBids });
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ error: 'Failed to fetch user bids' });
+//     }
+// };
+
 const getMyBids = async (req, res) => {
     try {
         const userId = req.params.userId;
-        const user = await userDb.findById(userId);
+        const user = await userDb.findById(userId).populate({
+            path: 'myBids',
+            populate: [
+                { path: 'car', model: 'Car' },
+                { path: 'auction', model: 'Auction' },
+            ],
+        });
 
         if (!user || user.length === 0) {
             return res.status(404).json({ status: 404, message: 'No user found for this userId' });
         }
+
         const myBids = user.myBids;
 
         res.status(200).json({ status: 200, myBids });
@@ -888,7 +912,6 @@ const getMyBids = async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch user bids' });
     }
 };
-
 
 
 const getAllUsers = async (req, res) => {
