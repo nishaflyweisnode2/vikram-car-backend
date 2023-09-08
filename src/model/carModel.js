@@ -19,7 +19,7 @@ const carSchema = new mongoose.Schema({
     },
     name: {
         type: String,
-        required: true,
+        // required: true,
         text: true,
     },
     buyingOption: {
@@ -29,36 +29,36 @@ const carSchema = new mongoose.Schema({
     },
     price: {
         type: Number,
-        required: true,
+        // required: true,
     },
     model: {
         type: String,
-        required: true,
+        // required: true,
     },
     variant: {
         type: String,
-        required: true,
+        // required: true,
     },
     fuelType: {
         type: String,
         enum: ["Petrol", "Diesel", "CNG", "Electric", "Hybrid"],
-        required: true,
+        // required: true,
         text: true,
 
     },
     description: {
         type: String,
-        required: true,
+        // required: true,
     },
     image: [
         {
             type: String,
-            required: true,
+            // required: true,
         },
     ],
     year: {
         type: Number,
-        required: true,
+        // required: true,
     },
     totalKm: {
         type: Number,
@@ -68,16 +68,16 @@ const carSchema = new mongoose.Schema({
     sellCarImage: [
         {
             type: String,
-            required: true,
+            // required: true,
         },
     ],
     mileage: {
         type: Number,
-        required: true,
+        // required: true,
     },
     owner: {
         type: String,
-        required: true,
+        // required: true,
     },
     isUsed: {
         type: Boolean,
