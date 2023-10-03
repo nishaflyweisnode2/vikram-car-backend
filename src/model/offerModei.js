@@ -4,16 +4,16 @@ const offerSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true,
     },
     car: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Car',
-        required: true,
+    },
+    image: {
+        type: String,
     },
     amount: {
         type: Number,
-        required: true,
     },
     status: {
         type: String,
@@ -22,7 +22,6 @@ const offerSchema = new mongoose.Schema({
     },
     description: {
         type: String,
-        required: true,
     },
     createdAt: {
         type: Date,

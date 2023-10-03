@@ -16,7 +16,28 @@ module.exports.addToFavouritesSchema = Joi.object({
 
 
 
+module.exports.addToMyBidSchema = Joi.object({
+    auctionId: Joi.string().required().hex().length(24).custom((value, helpers) => {
+        if (!mongoose.isValidObjectId(value)) {
+            return helpers.error('any.invalid');
+        }
+        return value;
+    }).required(),
+})
+
+
 module.exports.addMyBidSchema = Joi.object({
+    auctionId: Joi.string().required().hex().length(24).custom((value, helpers) => {
+        if (!mongoose.isValidObjectId(value)) {
+            return helpers.error('any.invalid');
+        }
+        return value;
+    }).required(),
+    bidAmount: Joi.number().integer().required(),
+})
+
+
+module.exports.updateMyBidSchema = Joi.object({
     auctionId: Joi.string().required().hex().length(24).custom((value, helpers) => {
         if (!mongoose.isValidObjectId(value)) {
             return helpers.error('any.invalid');

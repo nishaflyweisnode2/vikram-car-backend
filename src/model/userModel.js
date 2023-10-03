@@ -41,6 +41,12 @@ const userSchema = new mongoose.Schema({
             ref: 'Car',
         }
     ],
+    addToMyBids: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Auction',
+        }
+    ],
     carRating: [
         {
             carId: {

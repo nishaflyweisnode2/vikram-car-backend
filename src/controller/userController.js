@@ -8,7 +8,7 @@ const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
 const twilio = require('twilio');
 
-const { addToFavouritesSchema, addMyBidSchema, getMyWinsSchema } = require('../validation/uservalidation');
+const { addToFavouritesSchema, addToMyBidSchema, addMyBidSchema, getMyWinsSchema } = require('../validation/uservalidation');
 
 
 const { nameRegex, passwordRegex, emailRegex, mobileRegex, objectId, isValidBody, isValid, isValidField } = require('../validation/commonValidation')
@@ -469,6 +469,57 @@ const addToFavourites = async (req, res) => {
 };
 
 
+
+const addToMyBid = async (req, res) => {
+    try {
+        const { error } = addToMyBidSchema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ status: 400, message: error.details[0].message });
+        }
+
+        const { auctionId } = req.body;
+        const userId = req.params.userId;
+        const auction = await Auction.findById(auctionId);
+        if (!auction) {
+            return res.status(404).json({ status: 404, message: 'Auction not found' });
+        }
+        const user = await userDb.findById(userId);
+        if (!user || user.length === 0) {
+            return res.status(404).json({ status: 404, message: 'User not found' });
+        }
+        if (user.addToMyBids.includes(auctionId)) {
+            return res.status(400).json({ status: 400, message: 'Car is already in your favorites' });
+        }
+        user.addToMyBids.push(auctionId);
+        await user.save();
+
+        res.status(200).json({ status: 200, message: 'auction  added to addToMyBids successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to add car to favorites' });
+    }
+};
+
+
+const getToMyBid = async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const user = await userDb.findById(userId);
+
+        if (!user || user.length === 0) {
+            return res.status(404).json({ status: 404, message: 'No user found for this userId' });
+        }
+        const getToMyBidId = user.addToMyBids;
+        const myBids = await Auction.find({ _id: { $in: getToMyBidId } });
+
+        res.status(200).json({ status: 200, myBids });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to fetch favorite cars' });
+    }
+};
+
+
 // const addMyBid = async (req, res) => {
 //     try {
 //         const { error } = addMyBidSchema.validate(req.body);
@@ -571,6 +622,63 @@ const addMyBid = async (req, res) => {
     }
 };
 
+
+
+const updateMyBid = async (req, res) => {
+    try {
+        const { error } = updateMyBidSchema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ status: 400, message: error.details[0].message });
+        }
+
+        const { auctionId, bidAmount } = req.body;
+        const userId = req.params.userId;
+
+        const auction = await Auction.findById(auctionId);
+        if (!auction) {
+            return res.status(404).json({ status: 404, message: 'Auction not found' });
+        }
+
+        const user = await userDb.findById(userId);
+        if (!user) {
+            return res.status(404).json({ status: 404, message: 'User not found' });
+        }
+
+        const carId = auction.car;
+        const checkCar = await Car.findById(carId);
+        if (!checkCar) {
+            return res.status(404).json({ status: 404, message: 'Car not found' });
+        }
+
+        const winnerId = auction.winner.toString();
+        if (winnerId !== userId) {
+            return res.status(404).json({ status: 404, message: 'User not found in auction' });
+        }
+
+        const existingBidIndex = user.myBids.findIndex(
+            (bid) => bid.car.toString() === carId.toString() && bid.auction.toString() === auctionId.toString()
+        );
+
+        if (existingBidIndex === -1) {
+            return res.status(404).json({ status: 404, message: 'Bid not found' });
+        }
+
+        const existingBid = user.myBids[existingBidIndex];
+
+        if (bidAmount <= auction.highestBid) {
+            return res.status(400).json({ status: 400, message: 'Your bid amount must be greater than the current highest bid' });
+        }
+        console.log("1");
+        user.myBids[existingBidIndex].bidAmount = bidAmount;
+
+        await user.save();
+
+        return res.status(200).json({ status: 200, message: 'Bid updated successfully', bid: user.myBids[existingBidIndex] });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Failed to update bid' });
+    }
+};
 
 
 // const startAutobid = async (req, res) => {
@@ -953,7 +1061,10 @@ module.exports = {
     login,
     selectCity,
     addToFavourites,
+    addToMyBid,
+    getToMyBid,
     addMyBid,
+    updateMyBid,
     getMyWins,
     updateProfileImage,
     getFavoriteCars,
