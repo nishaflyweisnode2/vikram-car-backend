@@ -61,7 +61,6 @@ const createAuction = async (req, res) => {
 };
 
 
-
 const getAuctions = async (req, res) => {
     try {
         const auctions = await Auction.find();
@@ -71,6 +70,7 @@ const getAuctions = async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch auctions' });
     }
 };
+
 
 const getAuctionById = async (req, res) => {
     try {
@@ -88,11 +88,31 @@ const getAuctionById = async (req, res) => {
 };
 
 
+const getAuctionsByCarId = async (req, res) => {
+    try {
+        const { carId } = req.params;
+
+        const auctions = await Auction.find({ car: carId });
+
+        if (!auctions || auctions.length === 0) {
+            return res.status(404).json({ status: 404, message: 'No auctions found for the given carId' });
+        }
+
+        res.status(200).json({ status: 200, data: auctions });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to fetch auctions by carId' });
+    }
+};
+
+
+
 
 
 
 module.exports = {
     createAuction,
     getAuctions,
-    getAuctionById
+    getAuctionById,
+    getAuctionsByCarId
 };
