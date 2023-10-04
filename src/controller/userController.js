@@ -488,7 +488,7 @@ const addToMyBid = async (req, res) => {
             return res.status(404).json({ status: 404, message: 'User not found' });
         }
         if (user.addToMyBids.includes(auctionId)) {
-            return res.status(400).json({ status: 400, message: 'Car is already in your favorites' });
+            return res.status(400).json({ status: 400, message: 'Auction is already Add' });
         }
         user.addToMyBids.push(auctionId);
         await user.save();
