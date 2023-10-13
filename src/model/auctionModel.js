@@ -4,11 +4,9 @@ const auctionSchema = new mongoose.Schema({
     car: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Car',
-        required: true,
     },
     startingPrice: {
         type: Number,
-        required: true,
     },
     status: {
         type: String,
@@ -19,20 +17,27 @@ const auctionSchema = new mongoose.Schema({
         type: Number,
         default: 0,
     },
+    bidIncrement: {
+        type: Number,
+        default: 0,
+    },
+    refereId: {
+        type: String,
+    },
     winner: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
     },
     startingPrice: {
         type: Number,
-        required: true,
+        default: 0,
         min: 1,
     },
     finalPrice: {
         type: Number,
     },
     approvalTime: {
-        type: Date,
+        type: Number,
     },
     vehicleAddress: {
         type: String,
@@ -45,11 +50,9 @@ const auctionSchema = new mongoose.Schema({
     },
     startTime: {
         type: Date,
-        required: true,
     },
     endTime: {
         type: Date,
-        required: true,
         validate: {
             validator: function (endTime) {
                 return endTime > this.startTime;

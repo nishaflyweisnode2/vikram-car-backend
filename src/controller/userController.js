@@ -469,6 +469,31 @@ const addToFavourites = async (req, res) => {
 };
 
 
+const removeFromFavorites = async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const carId = req.params.carId;
+
+        const user = await userDb.findById(userId);
+        if (!user || user.length === 0) {
+            return res.status(404).json({ status: 404, message: 'No user found for this userId' });
+        }
+
+        if (!user.favouriteCars.includes(carId)) {
+            return res.status(400).json({ status: 400, message: 'Car is not in your favorites' });
+        }
+
+        user.favouriteCars = user.favouriteCars.filter((favCarId) => favCarId.toString() !== carId);
+
+        await user.save();
+
+        res.status(200).json({ status: 200, message: 'Car removed from favorites successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to remove car from favorites' });
+    }
+};
+
 
 const addToMyBid = async (req, res) => {
     try {
@@ -1061,6 +1086,7 @@ module.exports = {
     login,
     selectCity,
     addToFavourites,
+    removeFromFavorites,
     addToMyBid,
     getToMyBid,
     addMyBid,

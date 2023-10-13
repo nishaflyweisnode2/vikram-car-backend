@@ -2,7 +2,7 @@ require('dotenv').config()
 const express = require('express');
 const router = express.Router();
 
-const { signup, verifyOTP, resendOTP, login, selectCity, addToFavourites, addToMyBid, getToMyBid, addMyBid, updateMyBid, getMyWins, updateProfileImage, getFavoriteCars, getMyBids, getAllUsers, getUserById, startAutobid, resetAutobid, cancelAutobid } = require("../controller/userController");
+const { signup, verifyOTP, resendOTP, login, selectCity, addToFavourites, removeFromFavorites, addToMyBid, getToMyBid, addMyBid, updateMyBid, getMyWins, updateProfileImage, getFavoriteCars, getMyBids, getAllUsers, getUserById, startAutobid, resetAutobid, cancelAutobid } = require("../controller/userController");
 
 const { authenticateUser, authorizeUser, authorization, authenticateAdmin } = require("../middleware/auth");
 
@@ -18,6 +18,7 @@ router.post('/resend-otp/:userId', resendOTP);
 router.post('/login', login)
 router.post('/selectCity', authenticateUser, selectCity)
 router.post('/favourite/:userId', authenticateUser, authorization, addToFavourites);
+router.delete('/users/:userId/favorites/:carId', authenticateUser, removeFromFavorites);
 router.post('/addToMyBids/:userId', authenticateUser, authorization, addToMyBid);
 router.get('/addToMyBids/:userId', authenticateUser, authorization, getToMyBid);
 router.post('/users/:userId/bids', authenticateUser, authorization, addMyBid);
