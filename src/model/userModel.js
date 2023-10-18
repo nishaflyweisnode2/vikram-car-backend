@@ -69,21 +69,17 @@ const userSchema = new mongoose.Schema({
             auction: {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'Auction',
-                required: true,
             },
             bid: {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'Bid',
-                required: true,
             },
             bidAmount: {
                 type: Number,
-                required: true,
             },
             car: {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'Car',
-                required: true,
             },
             autobidEnabled: {
                 type: Boolean,

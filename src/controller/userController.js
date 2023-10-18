@@ -615,10 +615,10 @@ const addMyBid = async (req, res) => {
         if (!checkCar) {
             return res.status(404).json({ status: 404, message: 'Car not found' });
         }
-        const winnerId = auction.winner.toString();
-        if (winnerId !== userId) {
-            return res.status(404).json({ status: 404, message: 'User not found in auction' });
-        }
+        // const winnerId = auction.winner.toString();
+        // if (winnerId !== userId) {
+        //     return res.status(404).json({ status: 404, message: 'User not found in auction' });
+        // }
         const existingBid = user.myBids.find(
             (bid) => bid.car.toString() === carId.toString() && bid.auction.toString() === auctionId
         );
