@@ -2,11 +2,11 @@ require('dotenv').config()
 const express = require('express');
 const router = express.Router();
 
-const { signup, verifyOTP, resendOTP, loginWithMobile, loginWithEmail, selectCity, addToFavourites, updateWorkProfile, updateDocuments, updatePanCardImageImage, updateAadharCardImage, updateOtherDocumentImage, getAllCars, getNewCars, getUsedCars, searchCars } = require("../controller/vendorController");
+const { signup, verifyOTP, resendOTP, loginWithMobile, loginWithEmail, selectCity, addToFavourites, updateWorkProfile, updateDocuments, updatePanCardImageImage, updateAadharCardImage, updateOtherDocumentImage, getAllCars, getNewCars, getUsedCars, searchCars, getAllUser, getLatestUser } = require("../controller/vendorController");
 
 const { authenticateVendor,
     authorizeVendor,
-    vendorAuthorization } = require("../middleware/auth");
+    vendorAuthorization, authenticateUser } = require("../middleware/auth");
 const { createCity } = require('../controller/cityController');
 
 
@@ -29,6 +29,8 @@ router.get('/cars', authenticateVendor, getAllCars);
 router.get('/new-cars', authenticateVendor, getNewCars);
 router.get('/used-cars', authenticateVendor, getUsedCars);
 router.get('/search', authenticateVendor, searchCars);
+router.get('/getAllUser', authenticateVendor, getAllUser);
+router.get('/getLatestUser', authenticateVendor, getLatestUser);
 
 
 

@@ -8,9 +8,11 @@ const { authenticateUser, authorizeUser, authorization, authenticateAdmin } = re
 
 
 
-router.post('/bids', authenticateUser, auth.createBid)
+router.post('/bids/:userId', authenticateUser, auth.createBid)
 router.get('/bids', authenticateUser, auth.getBid)
 router.put('/bids/:bidId', authenticateUser, auth.updateBid)
+router.put('/user/:userId/bidding-settings/:bidId', authenticateUser, auth.updateUserBiddingSettings);
+
 
 
 

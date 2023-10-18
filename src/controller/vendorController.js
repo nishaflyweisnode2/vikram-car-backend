@@ -1,5 +1,6 @@
 require('dotenv').config()
 const vendorDb = require('../model/vendorModel');
+const userDb = require('../model/userModel');
 const City = require('../model/cityModel');
 const Car = require('../model/carModel');
 const Auction = require('../model/auctionModel');
@@ -901,6 +902,42 @@ const searchCars = async (req, res) => {
 };
 
 
+const getAllUser = async (req, res) => {
+    try {
+        const user = await userDb.find();
+        if (!user) {
+            return res.status(404).json({ status: 404, message: 'No car found' })
+        }
+        return res.status(200).json({
+            status: 200,
+            message: 'Successfully retrieved all user',
+            user,
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Failed to retrieve user' });
+    }
+};
+
+
+const getLatestUser = async (req, res) => {
+    try {
+        const latestUser = await userDb.find().sort({ createdAt: -1 }).limit(100);
+
+        if (!latestUser || latestUser.length === 0) {
+            return res.status(404).json({ status: 404, message: 'No user found' });
+        }
+
+        return res.status(200).json({
+            status: 200,
+            message: 'Successfully retrieved the latest user',
+            user: latestUser,
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Failed to retrieve the latest user' });
+    }
+};
 
 
 
@@ -928,5 +965,7 @@ module.exports = {
     getAllCars,
     getNewCars,
     getUsedCars,
-    searchCars
+    searchCars,
+    getAllUser,
+    getLatestUser
 };

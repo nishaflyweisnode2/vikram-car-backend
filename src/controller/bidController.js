@@ -14,7 +14,8 @@ const { bidSchema, bidUpdateSchema } = require('../validation/bidvalidation');
 
 const createBid = async (req, res) => {
     try {
-        const userId = req.user;
+        const userId = req.params.userId;
+        console.log(userId);
         const { auction, bidAmount } = req.body;
 
         const { error } = bidSchema.validate(req.body);
@@ -161,10 +162,135 @@ const updateBid = async (req, res) => {
     }
 };
 
+// const updateUserBiddingSettings = async (req, res) => {
+//     const { userId, bidId } = req.params;
+//     const updatedBiddingSettings = req.body;
+
+//     try {
+//         const user = await userDb.findById(userId);
+
+//         if (!user) {
+//             return res.status(404).json({ status: 404, message: 'User not found' });
+//         }
+
+//         const existingBid = await Bid.findById(bidId);
+
+//         if (!existingBid) {
+//             return res.status(404).json({ status: 404, message: 'Bid not found' });
+//         }
+
+//         if (!existingBid.user || existingBid.user.toString() !== userId) {
+//             return res.status(403).json({ status: 403, message: 'Unauthorized to update this bid' });
+//         }
+
+//         existingBid.autobidEnabled = updatedBiddingSettings.autobidEnabled;
+//         existingBid.autobidMaxBidAmount = updatedBiddingSettings.autobidMaxBidAmount;
+//         existingBid.bidIncrement = updatedBiddingSettings.bidIncrement;
+//         existingBid.lastBidAmount = updatedBiddingSettings.lastBidAmount;
+//         existingBid.autobidMaxBids = updatedBiddingSettings.autobidMaxBids;
+//         existingBid.bidLimit = updatedBiddingSettings.bidLimit;
+//         existingBid.autoDecreaseEnabled = updatedBiddingSettings.autoDecreaseEnabled;
+//         existingBid.decrementAmount = updatedBiddingSettings.decrementAmount;
+//         existingBid.startBidAmount = updatedBiddingSettings.startBidAmount;
+//         existingBid.currentBidAmount = updatedBiddingSettings.currentBidAmount;
+//         existingBid.bidStatus = updatedBiddingSettings.bidStatus;
+
+//         await existingBid.save();
+
+//         const myBidIndex = user.myBids.findIndex(b => b.bid && b.bid.toString() === bidId);
+//         console.log("myBidIndex", myBidIndex);
+
+
+//         if (myBidIndex !== -1) {
+//             console.log("Updating user.myBids...");
+//             user.myBids[myBidIndex].autobidEnabled = updatedBiddingSettings.autobidEnabled;
+//             user.myBids[myBidIndex].autobidMaxBidAmount = updatedBiddingSettings.autobidMaxBidAmount;
+//             user.myBids[myBidIndex].bidIncrement = updatedBiddingSettings.bidIncrement;
+//             user.myBids[myBidIndex].lastBidAmount = updatedBiddingSettings.lastBidAmount;
+//             user.myBids[myBidIndex].autobidMaxBids = updatedBiddingSettings.autobidMaxBids;
+
+//         }
+
+//         console.log("Saving user...");
+//         await user.save();
+
+
+//         return res.status(200).json({
+//             status: 200,
+//             message: 'Bidding settings updated successfully',
+//             existingBid,
+//         });
+//     } catch (error) {
+//         console.error(error);
+//         return res.status(500).json({ error: 'Failed to update bidding settings' });
+//     }
+// };
 
 
 
+const updateUserBiddingSettings = async (req, res) => {
+    const { userId, bidId } = req.params;
+    const updatedBiddingSettings = req.body;
+
+    try {
+        const user = await userDb.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ status: 404, message: 'User not found' });
+        }
+
+        const existingBid = await Bid.findById(bidId);
+
+        if (!existingBid) {
+            return res.status(404).json({ status: 404, message: 'Bid not found' });
+        }
+
+        if (!existingBid.user || existingBid.user.toString() !== userId) {
+            return res.status(403).json({ status: 403, message: 'Unauthorized to update this bid' });
+        }
+
+        existingBid.autobidEnabled = updatedBiddingSettings.autobidEnabled;
+        existingBid.autobidEnabled = updatedBiddingSettings.autobidEnabled;
+        existingBid.autobidMaxBidAmount = updatedBiddingSettings.autobidMaxBidAmount;
+        existingBid.bidIncrement = updatedBiddingSettings.bidIncrement;
+        existingBid.lastBidAmount = updatedBiddingSettings.lastBidAmount;
+        existingBid.autobidMaxBids = updatedBiddingSettings.autobidMaxBids;
+        existingBid.bidLimit = updatedBiddingSettings.bidLimit;
+        existingBid.autoDecreaseEnabled = updatedBiddingSettings.autoDecreaseEnabled;
+        existingBid.decrementAmount = updatedBiddingSettings.decrementAmount;
+        existingBid.startBidAmount = updatedBiddingSettings.startBidAmount;
+        existingBid.currentBidAmount = updatedBiddingSettings.currentBidAmount;
+        existingBid.bidStatus = updatedBiddingSettings.bidStatus;
+
+        await existingBid.save();
+        const myBidIndex = user.myBids
+        console.log(myBidIndex);
+
+        const myBidIndex1 = user.myBids.find(bid===bidId);
+        console.log(myBidIndex1);
+
+        // if (myBidIndex !== -1) {
+        //     console.log("Updating user.myBids...");
+        //     user.myBids[myBidIndex].autobidEnabled = updatedBiddingSettings.autobidEnabled;
+        //     user.myBids[myBidIndex].autobidMaxBidAmount = updatedBiddingSettings.autobidMaxBidAmount;
+        //     user.myBids[myBidIndex].bidIncrement = updatedBiddingSettings.bidIncrement;
+        //     user.myBids[myBidIndex].lastBidAmount = updatedBiddingSettings.lastBidAmount;
+        //     user.myBids[myBidIndex].autobidMaxBids = updatedBiddingSettings.autobidMaxBids;
+        // }
+
+        // await user.save();
+
+        return res.status(200).json({
+            status: 200,
+            message: 'Bidding settings updated successfully',
+            existingBid,
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Failed to update bidding settings' });
+    }
+};
 
 
 
-module.exports = { createBid, getBid, updateBid };
+module.exports = { createBid, getBid, updateBid, updateUserBiddingSettings };

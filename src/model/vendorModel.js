@@ -33,7 +33,7 @@ const vendorSchema = new mongoose.Schema({
     userType: {
         type: String,
         enum: ["Admin", "User"],
-        default: "User"
+        default: "Admin"
     },
     documents: {
         name: {

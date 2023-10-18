@@ -7,6 +7,8 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
 const twilio = require('twilio');
+const Bid = require('../model/bidModel');
+
 
 const { addToFavouritesSchema, addToMyBidSchema, addMyBidSchema, getMyWinsSchema } = require('../validation/uservalidation');
 
@@ -629,15 +631,24 @@ const addMyBid = async (req, res) => {
         if (bidAmount <= auction.highestBid) {
             return res.status(400).json({ status: 400, message: 'Your bid amount must be greater than the current highest bid' });
         }
-        const newBid = {
+        const newBid = new Bid({
+            user: userId,
             auction: auctionId,
-            car: carId,
+            bidAmount,
+        });
+
+        await newBid.save();
+        user.myBids.push({
+            auction: auctionId,
+            bid: newBid._id,
             bidAmount,
             autobidEnabled: false,
             autobidMaxBidAmount: 0,
+            bidIncrement: 0,
+            lastBidAmount: 0,
             autobidMaxBids: 0,
-        };
-        user.myBids.push(newBid);
+        });
+
         await user.save();
 
         res.status(200).json({ status: 200, message: 'Bid added successfully', bid: newBid });
