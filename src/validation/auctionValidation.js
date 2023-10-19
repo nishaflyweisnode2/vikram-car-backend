@@ -20,7 +20,6 @@ module.exports.createAuctionSchema = Joi.object({
         }
         return value;
     }).optional(),
-    approvalTime: Joi.number().allow(null),
     vehicleAddress: Joi.string().allow(null),
     missingDetails: Joi.string().allow(null),
     note: Joi.string().allow(null),

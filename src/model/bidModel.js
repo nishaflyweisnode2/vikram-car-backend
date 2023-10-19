@@ -1,66 +1,32 @@
 const mongoose = require('mongoose');
 
 const bidSchema = new mongoose.Schema({
-    user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-    },
     auction: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Auction',
     },
-    autobidEnabled: {
-        type: Boolean,
-        default: false,
+    bidder: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
     },
-    autobidMaxBidAmount: {
+    amount: {
         type: Number,
-        default: 0,
-    },
-    bidAmount: {
-        type: Number,
-    },
-    bidIncrement: {
-        type: Number,
-        default: 0,
-    },
-    lastBidAmount: {
-        type: Number,
-        default: 0,
-    },
-    autobidMaxBids: {
-        type: Number,
-        default: 0,
-    },
-    bidLimit: {
-        type: Number,
-        default: 0,
-    },
-    autoDecreaseEnabled: {
-        type: Boolean,
-        default: false,
-    },
-    decrementAmount: {
-        type: Number,
-        default: 0,
-    },
-    startBidAmount: {
-        type: Number,
-        default: 0,
-    },
-    currentBidAmount: {
-        type: Number,
-        default: 0,
     },
     bidStatus: {
         type: String,
-        enum: ['Start Bidding', 'Winning', 'Losing'],
-        default: 'Start Bidding',
+        enum: ['StartBidding', 'Winning', 'Losing'],
+        default: 'StartBidding',
     },
     bidTime: {
         type: Date,
         default: Date.now,
     },
+    winStatus: {
+        type: String,
+        enum: ['Underprocess', 'Backout', 'Uplifted', 'Approve', 'Reject'],
+        default: 'Underprocess',
+    },
+
 }, { timestamps: true });
 
 const Bid = mongoose.model('Bid', bidSchema);

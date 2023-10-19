@@ -3,13 +3,21 @@ const mongoose = require('mongoose');
 
 
 module.exports.bidSchema = Joi.object({
-    auction: Joi.string().custom((value, helpers) => {
+    userId: Joi.string().custom((value, helpers) => {
         if (!mongoose.isValidObjectId(value)) {
             return helpers.error('any.invalid');
         }
         return value;
     }).required(),
-    // bidAmount: Joi.number().positive().required(),
+    auctionId: Joi.string().custom((value, helpers) => {
+        if (!mongoose.isValidObjectId(value)) {
+            return helpers.error('any.invalid');
+        }
+        return value;
+    }).required(),
+    amount: Joi.number().positive().required(),
+    // bidLimit: Joi.number().positive().required(),
+    // startBidAmount: Joi.number().positive().required(),
 });
 
 

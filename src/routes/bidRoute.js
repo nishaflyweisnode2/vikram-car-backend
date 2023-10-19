@@ -9,10 +9,14 @@ const { authenticateUser, authorizeUser, authorization, authenticateAdmin } = re
 
 
 router.post('/bids/:userId', authenticateUser, auth.createBid)
-router.get('/bids', authenticateUser, auth.getBid)
-router.put('/bids/:bidId', authenticateUser, auth.updateBid)
-router.put('/user/:userId/bidding-settings/:bidId', authenticateUser, auth.updateUserBiddingSettings);
-
+router.put('/bids/update', authenticateUser, auth.updateBid);
+router.put('/bids/approve', authenticateUser, auth.approveBid);
+router.put('/admin/bid/:bidId/status', authenticateUser, auth.updateBidStatus);
+router.get('/bids/auction/:auctionId', authenticateUser, auth.getBidsForAuction);
+router.get('/bids/user/:userId', authenticateUser, auth.getBidsByUser);
+router.delete('/bids/cancel/:bidId', authenticateUser, auth.cancelBid);
+router.put('/bids/startAutoBid/:bidId', authenticateUser, auth.startAutoBid);
+router.put('/bids/stopAutoBid/:bidId', authenticateUser, auth.stopAutoBid);
 
 
 

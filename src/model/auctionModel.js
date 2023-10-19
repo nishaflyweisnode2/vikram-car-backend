@@ -5,9 +5,6 @@ const auctionSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Car',
     },
-    startingPrice: {
-        type: Number,
-    },
     status: {
         type: String,
         enum: ['Pending', 'Active', 'Closed'],
@@ -37,7 +34,7 @@ const auctionSchema = new mongoose.Schema({
         type: Number,
     },
     approvalTime: {
-        type: Number,
+        type: String,
     },
     vehicleAddress: {
         type: String,
@@ -60,6 +57,12 @@ const auctionSchema = new mongoose.Schema({
             message: 'End time must be greater than start time',
         },
     },
+    bids: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Bid',
+        },
+    ],
 
 
 }, { timestamps: true });

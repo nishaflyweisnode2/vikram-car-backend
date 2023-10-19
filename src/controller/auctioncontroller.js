@@ -2,6 +2,10 @@ const Auction = require('../model/auctionModel');
 const userDb = require('../model/userModel');
 const City = require('../model/cityModel');
 const Car = require('../model/carModel');
+const Bid = require('../model/bidModel');
+const { DateTime } = require('luxon');
+
+
 const { createAuctionSchema, auctionUpdateSchema } = require('../validation/auctionValidation');
 
 
@@ -21,7 +25,6 @@ const createAuction = async (req, res) => {
             highestBid,
             bidIncrement,
             winner,
-            approvalTime,
             vehicleAddress,
             missingDetails,
             note,
@@ -39,6 +42,14 @@ const createAuction = async (req, res) => {
                 return res.status(404).json({ status: 404, message: 'user with the given userId not found' });
             }
         }
+
+        const endTimeDate = DateTime.fromISO(endTime);
+        const currentTime = DateTime.now();
+        const remainingTime = endTimeDate.diff(currentTime, ['hours', 'minutes']);
+
+        const approvalTime = `${remainingTime.hours.toString().padStart(2, '0')}:${remainingTime.minutes.toString().padStart(2, '0')}`;
+
+
         const referId = Math.floor(10000 + Math.random() * 90000);
 
         const auction = new Auction({
@@ -176,6 +187,116 @@ const updateAuction = async (req, res) => {
 };
 
 
+const activateAuction = async (req, res) => {
+    try {
+        const auctionId = req.params.auctionId;
+
+        const auction = await Auction.findById(auctionId);
+
+        if (!auction) {
+            return res.status(404).json({ message: 'Auction not found' });
+        }
+
+        const currentTime = new Date();
+        console.log("currentTime", currentTime);
+        const startTime = auction.startTime;
+        console.log("startTime", startTime);
+        const endTime = auction.endTime;
+        console.log("endTime", endTime);
+
+
+        if (currentTime >= startTime && currentTime < endTime) {
+            auction.status = 'Active';
+            console.log(auction);
+            await auction.save();
+            return res.status(200).json(auction);
+        } else {
+            return res.status(400).json({ message: 'Auction cannot be activated at this time' });
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Auction activation failed' });
+    }
+};
+
+
+const closeAuction = async (req, res) => {
+    try {
+        const auctionId = req.params.auctionId;
+
+        const auction = await Auction.findById(auctionId);
+
+        if (!auction) {
+            return res.status(404).json({ message: 'Auction not found' });
+        }
+
+        if (auction.status !== 'Active') {
+            return res.status(400).json({ message: 'Auction can only be closed when it is in the "Active" status' });
+        }
+
+        const highestBid = await Bid.findOne({ auction: auctionId }).sort({ amount: -1 });
+
+        if (highestBid) {
+            auction.winner = highestBid.bidder;
+            auction.finalPrice = highestBid.amount;
+            auction.status = 'Closed';
+        } else {
+            auction.winner = null;
+            auction.finalPrice = auction.startingPrice;
+            auction.status = 'Closed';
+        }
+
+        await auction.save();
+
+        res.status(200).json(auction);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Auction closing failed' });
+    }
+};
+
+
+const checkAndUpdateAuctionStatus = async () => {
+    try {
+        const currentTime = new Date();
+
+        const auctionsToClose = await Auction.find({
+            $or: [{ status: 'Active' }, { status: 'Pending' }],
+            endTime: { $lte: currentTime },
+        });
+
+        for (const auction of auctionsToClose) {
+            auction.status = 'Closed';
+            await auction.save();
+        }
+    } catch (error) {
+        console.error('Error checking and updating auction status:', error);
+    }
+};
+
+const handleExistingAuctions = async () => {
+    try {
+        const currentTime = new Date();
+
+        const existingAuctions = await Auction.find({
+            $or: [{ status: 'Active' }, { status: 'Pending' }],
+            endTime: { $lte: currentTime },
+        });
+
+        for (const auction of existingAuctions) {
+            auction.status = 'Closed';
+            await auction.save();
+        }
+    } catch (error) {
+        console.error('Error handling existing auctions:', error);
+    }
+};
+
+const intervalInMinutes = 1;
+setInterval(checkAndUpdateAuctionStatus, intervalInMinutes * 60 * 1000);
+
+handleExistingAuctions();
+
 
 
 
@@ -185,5 +306,7 @@ module.exports = {
     getAuctions,
     getAuctionById,
     getAuctionsByCarId,
-    updateAuction
+    updateAuction,
+    activateAuction,
+    closeAuction
 };

@@ -66,20 +66,19 @@ const userSchema = new mongoose.Schema({
     },
     myBids: [
         {
-            auction: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'Auction',
-            },
-            bid: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'Bid',
-            },
-            bidAmount: {
+            bidLimit: {
                 type: Number,
             },
-            car: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'Car',
+            startBidAmount: {
+                type: Number,
+            },
+            currentBidAmount: {
+                type: Number,
+                default: 0,
+            },
+            winBidAmount: {
+                type: Number,
+                default: 0,
             },
             autobidEnabled: {
                 type: Boolean,
@@ -98,6 +97,14 @@ const userSchema = new mongoose.Schema({
                 default: 0,
             },
             autobidMaxBids: {
+                type: Number,
+                default: 0,
+            },
+            autoDecreaseEnabled: {
+                type: Boolean,
+                default: false,
+            },
+            decrementAmount: {
                 type: Number,
                 default: 0,
             },

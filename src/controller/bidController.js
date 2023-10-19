@@ -10,287 +10,235 @@ const { bidSchema, bidUpdateSchema } = require('../validation/bidvalidation');
 
 
 
-
-
-const createBid = async (req, res) => {
+exports.createBid = async (req, res) => {
     try {
-        const userId = req.params.userId;
-        console.log(userId);
-        const { auction, bidAmount } = req.body;
+        const userId = req.params.userId
+        const { auctionId, amount } = req.body;
 
-        const { error } = bidSchema.validate(req.body);
+        const { error } = bidSchema.validate({ userId, auctionId, amount });
         if (error) {
-            return res.status(400).json({ message: error.details[0].message });
+            return res.status(400).json({ status: 400, message: error.details[0].message });
         }
 
-        const user = await userDb.findById(userId);
-        if (!user || user.length === 0) {
-            return res.status(404).json({ status: 404, message: 'No user found for this userId' });
-        }
-
-        const auctionData = await Auction.findById(auction);
-
-        if (!auctionData) {
+        const auction = await Auction.findById(auctionId);
+        if (!auction) {
             return res.status(404).json({ status: 404, message: 'Auction not found' });
         }
 
-        if (bidAmount > auctionData.bidLimit) {
-            return res.status(400).json({ status: 400, message: 'Bid amount exceeds the limit' });
+        if (auction.status !== 'Active') {
+            return res.status(400).json({ status: 400, message: 'Auction is not currently active for bidding' });
         }
 
-        const minBidAmount = auctionData.highestBid + auctionData.bidIncrement;
+        const currentHighestBid = auction.highestBid;
 
-        if (bidAmount < minBidAmount) {
-            return res.status(400).json({ status: 400, message: 'Bid amount is too low' });
+        if (amount < currentHighestBid) {
+            return res.status(400).json({ status: 400, message: 'Bid amount is Less Than Current Bid' });
+        }
+
+        if (amount <= currentHighestBid) {
+            return res.status(400).json({ status: 400, message: 'Your bid must be higher than the current highest bid' });
+        }
+
+        const previousBid = await Bid.findOne({ bidStatus: "StartBidding", winStatus: "Underprocess" });
+
+        if (previousBid) {
+            previousBid.bidStatus = 'Losing';
+            previousBid.winStatus = 'Reject';
+            await previousBid.save();
         }
 
         const newBid = new Bid({
-            user: user._id,
-            auction,
-            bidAmount,
-            bidIncrement: auctionData.bidIncrement,
-            lastBidAmount: auctionData.highestBid,
+            auction: auctionId,
+            bidder: userId,
+            amount,
+            currentBidAmount: amount,
         });
+
+        auction.highestBid = amount;
 
         await newBid.save();
+        await auction.bids.push(newBid._id);
+        await auction.save();
 
-        auctionData.highestBid = bidAmount;
-        await auctionData.save();
-
-        return res.status(201).json({ status: 201, data: newBid });
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({ message: 'Bid placement failed' });
-    }
-};
-
-
-const getBid = async (req, res) => {
-    try {
-        const bids = await Bid.find();
-        res.status(200).json({ status: 200, data: bids });
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: 'Failed to fetch bids' });
-    }
-};
-
-
-const updateBid = async (req, res) => {
-    try {
-        const bidId = req.params.bidId;
-
-        const {
-            bidAmount,
-            autobidEnabled,
-            autobidMaxBidAmount,
-            bidIncrement,
-            lastBidAmount,
-            autobidMaxBids,
-            bidLimit,
-            autoDecreaseEnabled,
-            decrementAmount,
-            bidStatus,
-            bidTime,
-        } = req.body;
-
-        const { error } = bidUpdateSchema.validate({
-            bidId,
-            bidAmount,
-            autobidEnabled,
-            autobidMaxBidAmount,
-            bidIncrement,
-            lastBidAmount,
-            autobidMaxBids,
-            bidLimit,
-            autoDecreaseEnabled,
-            decrementAmount,
-            bidStatus,
-            bidTime,
-        });
-
-        if (error) {
-            return res.status(400).json({ message: error.details[0].message });
-        }
-
-        const existingBid = await Bid.findById(bidId);
-
-        if (!existingBid) {
-            return res.status(404).json({ status: 404, message: 'Bid not found' });
-        }
-
-        if (bidAmount !== undefined) {
-            existingBid.bidAmount = bidAmount;
-        }
-        if (autobidEnabled !== undefined) {
-            existingBid.autobidEnabled = autobidEnabled;
-        }
-        if (autobidMaxBidAmount !== undefined) {
-            existingBid.autobidMaxBidAmount = autobidMaxBidAmount;
-        }
-        if (bidIncrement !== undefined) {
-            existingBid.bidIncrement = bidIncrement;
-        }
-        if (lastBidAmount !== undefined) {
-            existingBid.lastBidAmount = lastBidAmount;
-        }
-        if (autobidMaxBids !== undefined) {
-            existingBid.autobidMaxBids = autobidMaxBids;
-        }
-        if (bidLimit !== undefined) {
-            existingBid.bidLimit = bidLimit;
-        }
-        if (autoDecreaseEnabled !== undefined) {
-            existingBid.autoDecreaseEnabled = autoDecreaseEnabled;
-        }
-        if (decrementAmount !== undefined) {
-            existingBid.decrementAmount = decrementAmount;
-        }
-        if (bidStatus !== undefined) {
-            existingBid.bidStatus = bidStatus;
-        }
-        if (bidTime !== undefined) {
-            existingBid.bidTime = bidTime;
-        }
-
-        await existingBid.save();
-
-        return res.status(200).json({ status: 200, message: 'Bid updated successfully', bid: existingBid });
+        res.status(201).json(newBid);
     } catch (error) {
         console.error(error);
-        return res.status(500).json({ error: 'Failed to update bid' });
+        res.status(500).json({ status: 500, message: 'Failed to create a bid' });
     }
 };
 
-// const updateUserBiddingSettings = async (req, res) => {
-//     const { userId, bidId } = req.params;
-//     const updatedBiddingSettings = req.body;
 
-//     try {
-//         const user = await userDb.findById(userId);
-
-//         if (!user) {
-//             return res.status(404).json({ status: 404, message: 'User not found' });
-//         }
-
-//         const existingBid = await Bid.findById(bidId);
-
-//         if (!existingBid) {
-//             return res.status(404).json({ status: 404, message: 'Bid not found' });
-//         }
-
-//         if (!existingBid.user || existingBid.user.toString() !== userId) {
-//             return res.status(403).json({ status: 403, message: 'Unauthorized to update this bid' });
-//         }
-
-//         existingBid.autobidEnabled = updatedBiddingSettings.autobidEnabled;
-//         existingBid.autobidMaxBidAmount = updatedBiddingSettings.autobidMaxBidAmount;
-//         existingBid.bidIncrement = updatedBiddingSettings.bidIncrement;
-//         existingBid.lastBidAmount = updatedBiddingSettings.lastBidAmount;
-//         existingBid.autobidMaxBids = updatedBiddingSettings.autobidMaxBids;
-//         existingBid.bidLimit = updatedBiddingSettings.bidLimit;
-//         existingBid.autoDecreaseEnabled = updatedBiddingSettings.autoDecreaseEnabled;
-//         existingBid.decrementAmount = updatedBiddingSettings.decrementAmount;
-//         existingBid.startBidAmount = updatedBiddingSettings.startBidAmount;
-//         existingBid.currentBidAmount = updatedBiddingSettings.currentBidAmount;
-//         existingBid.bidStatus = updatedBiddingSettings.bidStatus;
-
-//         await existingBid.save();
-
-//         const myBidIndex = user.myBids.findIndex(b => b.bid && b.bid.toString() === bidId);
-//         console.log("myBidIndex", myBidIndex);
-
-
-//         if (myBidIndex !== -1) {
-//             console.log("Updating user.myBids...");
-//             user.myBids[myBidIndex].autobidEnabled = updatedBiddingSettings.autobidEnabled;
-//             user.myBids[myBidIndex].autobidMaxBidAmount = updatedBiddingSettings.autobidMaxBidAmount;
-//             user.myBids[myBidIndex].bidIncrement = updatedBiddingSettings.bidIncrement;
-//             user.myBids[myBidIndex].lastBidAmount = updatedBiddingSettings.lastBidAmount;
-//             user.myBids[myBidIndex].autobidMaxBids = updatedBiddingSettings.autobidMaxBids;
-
-//         }
-
-//         console.log("Saving user...");
-//         await user.save();
-
-
-//         return res.status(200).json({
-//             status: 200,
-//             message: 'Bidding settings updated successfully',
-//             existingBid,
-//         });
-//     } catch (error) {
-//         console.error(error);
-//         return res.status(500).json({ error: 'Failed to update bidding settings' });
-//     }
-// };
-
-
-
-const updateUserBiddingSettings = async (req, res) => {
-    const { userId, bidId } = req.params;
-    const updatedBiddingSettings = req.body;
-
+exports.updateBid = async (req, res) => {
     try {
-        const user = await userDb.findById(userId);
+        const { bidId, amount, } = req.body;
 
-        if (!user) {
-            return res.status(404).json({ status: 404, message: 'User not found' });
-        }
-
-        const existingBid = await Bid.findById(bidId);
-
-        if (!existingBid) {
+        const bid = await Bid.findById(bidId);
+        if (!bid) {
             return res.status(404).json({ status: 404, message: 'Bid not found' });
         }
 
-        if (!existingBid.user || existingBid.user.toString() !== userId) {
-            return res.status(403).json({ status: 403, message: 'Unauthorized to update this bid' });
+        if (bid.bidStatus !== 'startBidding') {
+            return res.status(400).json({ status: 400, message: 'This bid cannot be updated' });
         }
 
-        existingBid.autobidEnabled = updatedBiddingSettings.autobidEnabled;
-        existingBid.autobidEnabled = updatedBiddingSettings.autobidEnabled;
-        existingBid.autobidMaxBidAmount = updatedBiddingSettings.autobidMaxBidAmount;
-        existingBid.bidIncrement = updatedBiddingSettings.bidIncrement;
-        existingBid.lastBidAmount = updatedBiddingSettings.lastBidAmount;
-        existingBid.autobidMaxBids = updatedBiddingSettings.autobidMaxBids;
-        existingBid.bidLimit = updatedBiddingSettings.bidLimit;
-        existingBid.autoDecreaseEnabled = updatedBiddingSettings.autoDecreaseEnabled;
-        existingBid.decrementAmount = updatedBiddingSettings.decrementAmount;
-        existingBid.startBidAmount = updatedBiddingSettings.startBidAmount;
-        existingBid.currentBidAmount = updatedBiddingSettings.currentBidAmount;
-        existingBid.bidStatus = updatedBiddingSettings.bidStatus;
+        if (amount <= bid.currentBidAmount) {
+            return res.status(400).json({ status: 400, message: 'Your updated bid must be higher than the current highest bid' });
+        }
 
-        await existingBid.save();
-        const myBidIndex = user.myBids
-        console.log(myBidIndex);
+        bid.amount = amount;
+        bid.currentBidAmount = amount;
 
-        const myBidIndex1 = user.myBids.find(bid===bidId);
-        console.log(myBidIndex1);
+        const auction = await Auction.findById(bid.auction);
+        auction.highestBid = amount;
 
-        // if (myBidIndex !== -1) {
-        //     console.log("Updating user.myBids...");
-        //     user.myBids[myBidIndex].autobidEnabled = updatedBiddingSettings.autobidEnabled;
-        //     user.myBids[myBidIndex].autobidMaxBidAmount = updatedBiddingSettings.autobidMaxBidAmount;
-        //     user.myBids[myBidIndex].bidIncrement = updatedBiddingSettings.bidIncrement;
-        //     user.myBids[myBidIndex].lastBidAmount = updatedBiddingSettings.lastBidAmount;
-        //     user.myBids[myBidIndex].autobidMaxBids = updatedBiddingSettings.autobidMaxBids;
+        await bid.save();
+        await auction.save();
+
+        res.status(200).json(bid);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ status: 500, message: 'Failed to update the bid' });
+    }
+};
+
+
+exports.approveBid = async (req, res) => {
+    try {
+        const { bidId, winStatus } = req.body;
+
+        const bid = await Bid.findById(bidId);
+        if (!bid) {
+            return res.status(404).json({ status: 404, message: 'Bid not found' });
+        }
+
+        // if (bid.bidStatus !== 'winning') {
+        //     return res.status(400).json({ status: 400, message: 'This bid cannot be approved/rejected' });
         // }
 
-        // await user.save();
+        bid.winStatus = winStatus;
+        await bid.save();
 
-        return res.status(200).json({
-            status: 200,
-            message: 'Bidding settings updated successfully',
-            existingBid,
-        });
+        res.status(200).json(bid);
     } catch (error) {
         console.error(error);
-        return res.status(500).json({ error: 'Failed to update bidding settings' });
+        res.status(500).json({ status: 500, message: 'Failed to approve/reject the bid' });
+    }
+};
+
+
+exports.updateBidStatus = async (req, res) => {
+    try {
+        const bidId = req.params.bidId;
+        const { winStatus, bidStatus } = req.body;
+
+        const bid = await Bid.findById(bidId);
+
+        if (!bid) {
+            return res.status(404).json({ status: 404, message: 'Bid not found' });
+        }
+
+        if (winStatus) {
+            bid.winStatus = winStatus;
+        }
+
+        if (bidStatus) {
+            bid.bidStatus = bidStatus;
+        }
+
+        await bid.save();
+
+        res.status(200).json(bid);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ status: 500, message: 'Failed to update bid status' });
+    }
+};
+
+
+exports.getBidsForAuction = async (req, res) => {
+    try {
+        const auctionId = req.params.auctionId;
+        const bids = await Bid.find({ auction: auctionId });
+        res.status(200).json(bids);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ status: 500, message: 'Failed to retrieve bids' });
+    }
+};
+
+
+exports.getBidsByUser = async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const bids = await Bid.find({ bidder: userId });
+        res.status(200).json(bids);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ status: 500, message: 'Failed to retrieve bids' });
     }
 };
 
 
 
-module.exports = { createBid, getBid, updateBid, updateUserBiddingSettings };
+exports.cancelBid = async (req, res) => {
+    try {
+        const bidId = req.params.bidId;
+        const bid = await Bid.findById(bidId);
+
+        if (!bid) {
+            return res.status(404).json({ status: 404, message: 'Bid not found' });
+        }
+
+        if (bid.bidStatus !== 'startBidding') {
+            return res.status(400).json({ status: 400, message: 'This bid cannot be canceled' });
+        }
+
+        await bid.remove();
+        res.status(200).json({ status: 200, message: 'Bid canceled successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ status: 500, message: 'Failed to cancel the bid' });
+    }
+};
+
+
+exports.startAutoBid = async (req, res) => {
+    try {
+        const bidId = req.params.bidId;
+        const bid = await Bid.findById(bidId);
+
+        if (!bid) {
+            return res.status(404).json({ status: 404, message: 'Bid not found' });
+        }
+
+        bid.autobidEnabled = true;
+        await bid.save();
+        res.status(200).json(bid);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ status: 500, message: 'Failed to start auto-bidding' });
+    }
+};
+
+
+exports.stopAutoBid = async (req, res) => {
+    try {
+        const bidId = req.params.bidId;
+        const bid = await Bid.findById(bidId);
+
+        if (!bid) {
+            return res.status(404).json({ status: 404, message: 'Bid not found' });
+        }
+
+        bid.autobidEnabled = false;
+        await bid.save();
+        res.status(200).json(bid);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ status: 500, message: 'Failed to stop auto-bidding' });
+    }
+};
+
+
+
+
