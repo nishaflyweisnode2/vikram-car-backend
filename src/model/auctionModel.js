@@ -24,6 +24,7 @@ const auctionSchema = new mongoose.Schema({
     winner: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
+        default: null
     },
     startingPrice: {
         type: Number,
@@ -32,6 +33,7 @@ const auctionSchema = new mongoose.Schema({
     },
     finalPrice: {
         type: Number,
+        default: 0,
     },
     approvalTime: {
         type: String,

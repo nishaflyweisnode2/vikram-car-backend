@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { createAuction, getAuctions, getAuctionById, getAuctionsByCarId, updateAuction, activateAuction, closeAuction } = require('../controller/auctioncontroller');
+const { createAuction, getAuctions, getAuctionById, getAuctionsByCarId, updateAuction, activateAuction, closeAuction, updateUserBids } = require('../controller/auctioncontroller');
 
 const { authenticateUser, authorizeUser, authorization, authenticateAdmin } = require("../middleware/auth");
 
@@ -14,6 +14,7 @@ router.get('/auctions/by-car/:carId', getAuctionsByCarId);
 router.put('/auctions/:auctionId', authenticateUser, updateAuction)
 router.put('/activate/:auctionId', authenticateUser, activateAuction);
 router.put('/close/:auctionId', authenticateUser, closeAuction);
+router.put('/:userId/myBids', authenticateUser, authenticateAdmin, updateUserBids);
 
 
 

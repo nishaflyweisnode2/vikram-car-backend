@@ -520,7 +520,7 @@ const addToMyBid = async (req, res) => {
         user.addToMyBids.push(auctionId);
         await user.save();
 
-        res.status(200).json({ status: 200, message: 'auction  added to addToMyBids successfully' });
+        res.status(200).json({ status: 200, message: 'auction  added to addToMyBids successfully', data: user.addToMyBids });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to add car to favorites' });
@@ -546,236 +546,6 @@ const getToMyBid = async (req, res) => {
     }
 };
 
-
-// const addMyBid = async (req, res) => {
-//     try {
-//         const { error } = addMyBidSchema.validate(req.body);
-//         if (error) {
-//             return res.status(400).json({ status: 400, message: error.details[0].message });
-//         }
-//         const { auctionId, bidAmount } = req.body;
-//         const userId = req.params.userId;
-//         const auction = await Auction.findById(auctionId);
-//         if (!auction) {
-//             return res.status(404).json({ status: 404, message: 'Auction not found' });
-//         }
-//         const user = await userDb.findById(userId);
-//         if (!user) {
-//             return res.status(404).json({ status: 404, message: 'User not found' });
-//         }
-//         const carId = auction.car
-//         const checkCar = await Car.findById(carId)
-//         if (!checkCar) {
-//             return res.status(404).json({ status: 404, message: 'Car not found' });
-//         }
-//         const winnerId = auction.winner.toString();
-//         if (winnerId !== userId) {
-//             return res.status(404).json({ status: 404, message: 'User not found in auction' });
-//         }
-//         const existingBid = user.myBids.find((bid) => bid.car.toString() === carId.toString() && bid.auction.toString() === auctionId);
-//         console.log("existingBid", existingBid);
-//         if (existingBid) {
-//             return res.status(400).json({ status: 400, message: 'You have already placed a bid on this auction' });
-//         }
-//         if (bidAmount <= auction.highestBid) {
-//             return res.status(400).json({ status: 400, message: 'Your bid amount must be greater than the current highest bid' });
-//         }
-//         const newBid = {
-//             auction: auctionId,
-//             car: carId,
-//             bidAmount,
-//         };
-//         user.myBids.push(newBid);
-//         await user.save();
-
-//         res.status(200).json({ status: 200, message: 'Bid added successfully', bid: newBid });
-//     } catch (error) {
-//         console.error(error);
-//         res.status(500).json({ error: 'Failed to add bid' });
-//     }
-// };
-
-
-const addMyBid = async (req, res) => {
-    try {
-        const { error } = addMyBidSchema.validate(req.body);
-        if (error) {
-            return res.status(400).json({ status: 400, message: error.details[0].message });
-        }
-        const { auctionId, bidAmount } = req.body;
-        const userId = req.params.userId;
-        const auction = await Auction.findById(auctionId);
-        if (!auction) {
-            return res.status(404).json({ status: 404, message: 'Auction not found' });
-        }
-        const user = await userDb.findById(userId);
-        if (!user) {
-            return res.status(404).json({ status: 404, message: 'User not found' });
-        }
-        const carId = auction.car;
-        const checkCar = await Car.findById(carId);
-        if (!checkCar) {
-            return res.status(404).json({ status: 404, message: 'Car not found' });
-        }
-        // const winnerId = auction.winner.toString();
-        // if (winnerId !== userId) {
-        //     return res.status(404).json({ status: 404, message: 'User not found in auction' });
-        // }
-        const existingBid = user.myBids.find(
-            (bid) => bid.car.toString() === carId.toString() && bid.auction.toString() === auctionId
-        );
-        console.log("existingBid", existingBid);
-        if (existingBid) {
-            return res.status(400).json({ status: 400, message: 'You have already placed a bid on this auction' });
-        }
-        if (bidAmount <= auction.highestBid) {
-            return res.status(400).json({ status: 400, message: 'Your bid amount must be greater than the current highest bid' });
-        }
-        const newBid = new Bid({
-            user: userId,
-            auction: auctionId,
-            bidAmount,
-        });
-
-        await newBid.save();
-        user.myBids.push({
-            auction: auctionId,
-            bid: newBid._id,
-            bidAmount,
-            autobidEnabled: false,
-            autobidMaxBidAmount: 0,
-            bidIncrement: 0,
-            lastBidAmount: 0,
-            autobidMaxBids: 0,
-        });
-
-        await user.save();
-
-        res.status(200).json({ status: 200, message: 'Bid added successfully', bid: newBid });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Failed to add bid' });
-    }
-};
-
-
-
-const updateMyBid = async (req, res) => {
-    try {
-        const { error } = updateMyBidSchema.validate(req.body);
-        if (error) {
-            return res.status(400).json({ status: 400, message: error.details[0].message });
-        }
-
-        const { auctionId, bidAmount } = req.body;
-        const userId = req.params.userId;
-
-        const auction = await Auction.findById(auctionId);
-        if (!auction) {
-            return res.status(404).json({ status: 404, message: 'Auction not found' });
-        }
-
-        const user = await userDb.findById(userId);
-        if (!user) {
-            return res.status(404).json({ status: 404, message: 'User not found' });
-        }
-
-        const carId = auction.car;
-        const checkCar = await Car.findById(carId);
-        if (!checkCar) {
-            return res.status(404).json({ status: 404, message: 'Car not found' });
-        }
-
-        const winnerId = auction.winner.toString();
-        if (winnerId !== userId) {
-            return res.status(404).json({ status: 404, message: 'User not found in auction' });
-        }
-
-        const existingBidIndex = user.myBids.findIndex(
-            (bid) => bid.car.toString() === carId.toString() && bid.auction.toString() === auctionId.toString()
-        );
-
-        if (existingBidIndex === -1) {
-            return res.status(404).json({ status: 404, message: 'Bid not found' });
-        }
-
-        const existingBid = user.myBids[existingBidIndex];
-
-        if (bidAmount <= auction.highestBid) {
-            return res.status(400).json({ status: 400, message: 'Your bid amount must be greater than the current highest bid' });
-        }
-        console.log("1");
-        user.myBids[existingBidIndex].bidAmount = bidAmount;
-
-        await user.save();
-
-        return res.status(200).json({ status: 200, message: 'Bid updated successfully', bid: user.myBids[existingBidIndex] });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ error: 'Failed to update bid' });
-    }
-};
-
-
-// const startAutobid = async (req, res) => {
-//     try {
-//         const { auctionId } = req.params;
-//         const { userId, autobidMaxBidAmount, bidIncrement, } = req.body;
-
-//         const user = await userDb.findById(userId);
-//         const auction = await Auction.findById(auctionId);
-
-//         if (!user || !auction) {
-//             return res.status(404).json({ status: 404, message: 'User or auction not found' });
-//         }
-
-//         if (!user.myBids) {
-//             user.myBids = {
-//                 autobidEnabled: false,
-//                 autobidMaxBidAmount: autobidMaxBidAmount,
-//                 bidIncrement: bidIncrement,
-//                 autobidMaxBids: 1000,
-//             };
-//         }
-
-//         user.myBids.autobidEnabled = true;
-//         user.myBids.autobidMaxBidAmount = autobidMaxBidAmount;
-//         user.myBids.bidIncrement = bidIncrement;
-//         user.myBids.autobidMaxBids = 1000;
-
-//         if (!user.myBids.autobidEnabled) {
-//             return res.status(400).json({ status: 400, message: 'Autobid is not enabled for this user' });
-//         }
-
-//         if (user.balance < user.myBids.autobidMaxBidAmount) {
-//             return res.status(400).json({ status: 400, message: 'Insufficient balance for autobid' });
-//         }
-
-//         let currentBidAmount = auction.highestBid + user.myBids.bidIncrement;
-//         let bidsPlaced = 0;
-
-//         while (bidsPlaced < user.myBids.autobidMaxBids && user.balance >= currentBidAmount) {
-//             // Place an autobid with the currentBidAmount
-//             // Implement your code to place the bid here (e.g., update the auction's highestBid)
-
-//             // Deduct the bid amount from the user's balance
-//             user.balance -= currentBidAmount;
-
-//             user.myBids.lastBidAmount = currentBidAmount;
-//             user.myBids.bidsPlaced++;
-
-//             currentBidAmount += user.myBids.bidIncrement;
-//             bidsPlaced++;
-//         }
-
-//         await user.save();
-
-//         res.status(200).json({ status: 200, message: 'Autobid started successfully' });
-//     } catch (error) {
-//         console.error(error);
-//         res.status(500).json({ error: 'Failed to start autobid' });
-//     }
-// };
 
 
 const startAutobid = async (req, res) => {
@@ -893,58 +663,31 @@ const cancelAutobid = async (req, res) => {
 
 
 
-
-// const getMyWins = async (req, res) => {
-//     try {
-//         const { error } = getMyWinsSchema.validate(req.params);
-//         if (error) {
-//             return res.status(400).json({ status: 400, message: error.details[0].message });
-//         }
-//         const userId = req.params.userId;
-//         const user = await userDb.findById(userId).populate({
-//             path: 'myBids.auction',
-//             populate: {
-//                 path: 'car',
-//                 model: 'Car',
-//             },
-//         });
-//         if (!user) {
-//             return res.status(404).json({ status: 404, message: 'User not found' });
-//         }
-//         const myWins = user.myBids.filter((bid) => bid.auction && bid.auction.winner && bid.auction.winner.toString() === userId);
-
-//         res.status(200).json({ status: 200, wins: myWins });
-//     } catch (error) {
-//         console.error(error);
-//         res.status(500).json({ error: 'Failed to fetch user wins' });
-//     }
-// };
-
-
-
 const getMyWins = async (req, res) => {
     try {
         const { error } = getMyWinsSchema.validate(req.params);
         if (error) {
             return res.status(400).json({ status: 400, message: error.details[0].message });
         }
+
         const userId = req.params.userId;
-        const user = await userDb.findById(userId).populate({
-            path: 'myBids.auction',
-            // populate: {
-            //   path: 'car',
-            //   model: 'Car',
-            // },
-        });
+        const user = await userDb.findById(userId);
 
         if (!user) {
             return res.status(404).json({ status: 404, message: 'User not found' });
         }
-        const myWins = user.myBids.filter((bid) => bid.auction && bid.auction.winner && bid.auction.winner.toString() === userId);
-        const carIds = myWins.map((bid) => bid.car.toString());
+
+        const myWins = await Auction.find({ winner: userId });
+
+        if (!myWins || myWins.length === 0) {
+            return res.status(200).json({ status: 200, message: 'User has no wins', wins: [] });
+        }
+
+        const carIds = myWins.map(auction => auction.car);
+
         const cars = await Car.find({ _id: { $in: carIds } });
 
-        res.status(200).json({ status: 200, wins: myWins, carIds, cars });
+        res.status(200).json({ status: 200, wins: myWins, cars });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to fetch user wins' });
@@ -1016,22 +759,6 @@ const getFavoriteCars = async (req, res) => {
 };
 
 
-// const getMyBids = async (req, res) => {
-//     try {
-//         const userId = req.params.userId;
-//         const user = await userDb.findById(userId);
-
-//         if (!user || user.length === 0) {
-//             return res.status(404).json({ status: 404, message: 'No user found for this userId' });
-//         }
-//         const myBids = user.myBids;
-
-//         res.status(200).json({ status: 200, myBids });
-//     } catch (error) {
-//         console.error(error);
-//         res.status(500).json({ error: 'Failed to fetch user bids' });
-//     }
-// };
 
 const getMyBids = async (req, res) => {
     try {
@@ -1056,6 +783,7 @@ const getMyBids = async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch user bids' });
     }
 };
+
 
 
 const getAllUsers = async (req, res) => {
@@ -1100,8 +828,6 @@ module.exports = {
     removeFromFavorites,
     addToMyBid,
     getToMyBid,
-    addMyBid,
-    updateMyBid,
     getMyWins,
     updateProfileImage,
     getFavoriteCars,

@@ -14,9 +14,9 @@ router.put('/bids/approve', authenticateUser, auth.approveBid);
 router.put('/admin/bid/:bidId/status', authenticateUser, auth.updateBidStatus);
 router.get('/bids/auction/:auctionId', authenticateUser, auth.getBidsForAuction);
 router.get('/bids/user/:userId', authenticateUser, auth.getBidsByUser);
-router.delete('/bids/cancel/:bidId', authenticateUser, auth.cancelBid);
-router.put('/bids/startAutoBid/:bidId', authenticateUser, auth.startAutoBid);
-router.put('/bids/stopAutoBid/:bidId', authenticateUser, auth.stopAutoBid);
+router.post('/bids/autoBid/:userId/:auctionId', authenticateUser, auth.placeAutoBid);
+router.put('/auto-bid/reset/:userId/:auctionId', authenticateUser, auth.resetAutoBid);
+router.post('/cancel/:userId/:auctionId', authenticateUser, auth.cancelAutoBid);
 
 
 

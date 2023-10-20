@@ -255,7 +255,7 @@ const closeAuction = async (req, res) => {
     }
 };
 
-
+// function for update status start
 const checkAndUpdateAuctionStatus = async () => {
     try {
         const currentTime = new Date();
@@ -296,6 +296,31 @@ const intervalInMinutes = 1;
 setInterval(checkAndUpdateAuctionStatus, intervalInMinutes * 60 * 1000);
 
 handleExistingAuctions();
+// function for update status End
+
+
+const updateUserBids = async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const { myBids } = req.body;
+
+        const user = await userDb.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ status: 404, message: 'User not found' });
+        }
+
+        user.myBids = myBids;
+
+        await user.save();
+
+        res.status(200).json(user);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ status: 500, message: 'Failed to update user bids' });
+    }
+};
+
 
 
 
@@ -308,5 +333,6 @@ module.exports = {
     getAuctionsByCarId,
     updateAuction,
     activateAuction,
-    closeAuction
+    closeAuction,
+    updateUserBids
 };

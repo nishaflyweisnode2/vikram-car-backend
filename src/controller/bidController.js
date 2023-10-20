@@ -139,6 +139,15 @@ exports.updateBidStatus = async (req, res) => {
 
         if (winStatus) {
             bid.winStatus = winStatus;
+
+            if (winStatus === 'Approve' && bidStatus === 'Winning') {
+                const auction = await Auction.findById(bid.auction);
+                if (auction) {
+                    auction.winner = bid.bidder;
+                    auction.status = "Closed";
+                    await auction.save();
+                }
+            }
         }
 
         if (bidStatus) {
@@ -179,66 +188,131 @@ exports.getBidsByUser = async (req, res) => {
 };
 
 
-
-exports.cancelBid = async (req, res) => {
+exports.placeAutoBid = async (req, res) => {
     try {
-        const bidId = req.params.bidId;
-        const bid = await Bid.findById(bidId);
-
-        if (!bid) {
-            return res.status(404).json({ status: 404, message: 'Bid not found' });
+        const { userId, auctionId } = req.params;
+        const { startBidAmount } = req.body;
+        const user = await userDb.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        if (bid.bidStatus !== 'startBidding') {
-            return res.status(400).json({ status: 400, message: 'This bid cannot be canceled' });
+        const auction = await Auction.findById(auctionId);
+        if (!auction) {
+            return res.status(404).json({ success: false, message: 'Auction not found' });
         }
 
-        await bid.remove();
-        res.status(200).json({ status: 200, message: 'Bid canceled successfully' });
+        if (!user.myBids.autobidEnabled) {
+            return res.status(400).json({ success: false, message: 'Auto-bidding is not enabled for this user' });
+        }
+
+        const existingBids = await Bid.find({ auction: auctionId });
+
+        if (existingBids.length > 0) {
+            console.log('Found existing bids:', existingBids);
+
+            for (const existingBid of existingBids) {
+                existingBid.bidStatus = 'Losing';
+                existingBid.winStatus = 'Backout';
+
+                try {
+                    await existingBid.save();
+                    console.log('Updated existing bid:', existingBid);
+                } catch (error) {
+                    console.error('Error updating existing bid:', error);
+                }
+            }
+        }
+
+        user.myBids.startBidAmount = startBidAmount;
+        await user.save();
+
+        const newBidAmount = startBidAmount;
+
+        const newBid = new Bid({
+            auction: auctionId,
+            bidder: userId,
+            amount: newBidAmount,
+            bidStatus: 'StartBidding',
+            winStatus: 'Underprocess',
+        });
+
+        auction.highestBid = newBidAmount;
+
+        await newBid.save();
+        await auction.bids.push(newBid._id);
+        await auction.save();
+
+        res.status(200).json({ success: true, message: 'Auto-bid placed successfully' });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ status: 500, message: 'Failed to cancel the bid' });
+        res.status(500).json({ success: false, message: 'Failed to place auto-bid' });
     }
 };
 
 
-exports.startAutoBid = async (req, res) => {
+exports.resetAutoBid = async (req, res) => {
     try {
-        const bidId = req.params.bidId;
-        const bid = await Bid.findById(bidId);
-
-        if (!bid) {
-            return res.status(404).json({ status: 404, message: 'Bid not found' });
+        const { userId, auctionId } = req.params;
+        const user = await userDb.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        bid.autobidEnabled = true;
-        await bid.save();
-        res.status(200).json(bid);
+        const auction = await Auction.findById(auctionId);
+        if (!auction) {
+            return res.status(404).json({ success: false, message: 'Auction not found' });
+        }
+
+        const myBidToUpdate = user.myBids;
+        if (!myBidToUpdate) {
+            return res.status(404).json({ success: false, message: 'User does not have a bid for this auction' });
+        }
+
+        myBidToUpdate.startBidAmount = 0;
+
+        await user.save();
+
+        res.status(200).json({ success: true, message: 'Auto-bid settings reset successfully' });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ status: 500, message: 'Failed to start auto-bidding' });
+        res.status(500).json({ success: false, message: 'Failed to reset auto-bid settings' });
     }
 };
 
 
-exports.stopAutoBid = async (req, res) => {
+exports.cancelAutoBid = async (req, res) => {
     try {
-        const bidId = req.params.bidId;
-        const bid = await Bid.findById(bidId);
-
-        if (!bid) {
-            return res.status(404).json({ status: 404, message: 'Bid not found' });
+        const { userId, auctionId } = req.params;
+        const user = await userDb.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        bid.autobidEnabled = false;
-        await bid.save();
-        res.status(200).json(bid);
+        const auction = await Auction.findById(auctionId);
+        if (!auction) {
+            return res.status(404).json({ success: false, message: 'Auction not found' });
+        }
+
+        const myBidToUpdate = user.myBids;
+
+        if (!myBidToUpdate) {
+            return res.status(404).json({ success: false, message: 'User does not have a bid for this auction' });
+        }
+
+        myBidToUpdate.autobidEnabled = false;
+        // myBidToUpdate.autobidMaxBidAmount = 0;
+        // myBidToUpdate.bidIncrementAmount = 0;
+        // myBidToUpdate.autobidMaxBids = 0;
+
+        await user.save();
+
+        res.status(200).json({ success: true, message: 'Auto-bid settings canceled successfully' });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ status: 500, message: 'Failed to stop auto-bidding' });
+        res.status(500).json({ success: false, message: 'Failed to cancel auto-bid settings' });
     }
 };
-
 
 
 
