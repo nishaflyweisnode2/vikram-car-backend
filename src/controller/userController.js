@@ -537,7 +537,7 @@ const getToMyBid = async (req, res) => {
             return res.status(404).json({ status: 404, message: 'No user found for this userId' });
         }
         const getToMyBidId = user.addToMyBids;
-        const myBids = await Auction.find({ _id: { $in: getToMyBidId } });
+        const myBids = await Auction.find({ _id: { $in: getToMyBidId } }).populate('car');
 
         res.status(200).json({ status: 200, myBids });
     } catch (error) {
