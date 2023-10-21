@@ -180,12 +180,26 @@ exports.getBidsByUser = async (req, res) => {
     try {
         const userId = req.params.userId;
         const bids = await Bid.find({ bidder: userId });
-        res.status(200).json(bids);
+        res.status(200).json({ status: 200, data: bids });
     } catch (error) {
         console.error(error);
         res.status(500).json({ status: 500, message: 'Failed to retrieve bids' });
     }
 };
+
+
+exports.getBidsByUserAndAuction = async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const auctionId = req.params.auctionId;
+        const bids = await Bid.find({ bidder: userId, auction: auctionId });
+        res.status(200).json({ status: 200, data: bids });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ status: 500, message: 'Failed to retrieve bids' });
+    }
+};
+
 
 
 exports.placeAutoBid = async (req, res) => {
