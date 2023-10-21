@@ -677,7 +677,7 @@ const getMyWins = async (req, res) => {
             return res.status(404).json({ status: 404, message: 'User not found' });
         }
 
-        const myWins = await Auction.find({ winner: userId });
+        const myWins = await Auction.find({ winner: userId }).populate('car');
 
         if (!myWins || myWins.length === 0) {
             return res.status(200).json({ status: 200, message: 'User has no wins', wins: [] });
