@@ -537,9 +537,10 @@ const getToMyBid = async (req, res) => {
             return res.status(404).json({ status: 404, message: 'No user found for this userId' });
         }
         const getToMyBidId = user.addToMyBids;
+        const getMyBid = user.myBids;
         const myBids = await Auction.find({ _id: { $in: getToMyBidId } }).populate('car');
 
-        res.status(200).json({ status: 200, myBids });
+        res.status(200).json({ status: 200, myBids, getMyBid });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to fetch favorite cars' });

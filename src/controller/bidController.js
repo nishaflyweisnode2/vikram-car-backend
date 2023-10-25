@@ -39,12 +39,15 @@ exports.createBid = async (req, res) => {
             return res.status(400).json({ status: 400, message: 'Your bid must be higher than the current highest bid' });
         }
 
-        const previousBid = await Bid.findOne({ bidStatus: "StartBidding", winStatus: "Underprocess" });
+        const previousBid = await Bid.findOne({ auction: auctionId, bidStatus: "StartBidding", winStatus: "Underprocess" });
+        console.log("previouBid1", previousBid);
 
         if (previousBid) {
             previousBid.bidStatus = 'Losing';
             previousBid.winStatus = 'Reject';
             await previousBid.save();
+            console.log("previouBid2", previousBid);
+
         }
 
         const newBid = new Bid({
@@ -59,6 +62,7 @@ exports.createBid = async (req, res) => {
         await newBid.save();
         await auction.bids.push(newBid._id);
         await auction.save();
+        console.log("previouBid3", previousBid);
 
         res.status(201).json(newBid);
     } catch (error) {
@@ -156,6 +160,14 @@ exports.updateBidStatus = async (req, res) => {
 
         await bid.save();
 
+        const previousBids = await Bid.find({ auction: bid.auction, bidStatus: "StartBidding", winStatus: "Underprocess" });
+
+        for (const previousBid of previousBids) {
+            previousBid.bidStatus = 'Losing';
+            previousBid.winStatus = 'Reject';
+            await previousBid.save();
+        }
+
         res.status(200).json(bid);
     } catch (error) {
         console.error(error);
@@ -205,13 +217,13 @@ exports.getBidsByUserAndAuction = async (req, res) => {
 exports.placeAutoBid = async (req, res) => {
     try {
         const { userId, auctionId } = req.params;
-        const { startBidAmount } = req.body;
+        let { startBidAmount } = req.body;
         const user = await userDb.findById(userId);
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        const auction = await Auction.findById(auctionId);
+        const auction = await Auction.findOne({ status: "Active", auctionId });
         if (!auction) {
             return res.status(404).json({ success: false, message: 'Auction not found' });
         }
@@ -220,10 +232,17 @@ exports.placeAutoBid = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Auto-bidding is not enabled for this user' });
         }
 
-        const existingBids = await Bid.find({ auction: auctionId });
+        // const existingBids = await Bid.find({ auction: auctionId });
+        const existingBids = await Bid.find({ auction: auctionId, bidStatus: "StartBidding", winStatus: "Underprocess" });
 
         if (existingBids.length > 0) {
             console.log('Found existing bids:', existingBids);
+
+            const highestBidAmount = Math.max(...existingBids.map(bid => bid.amount));
+
+            if (startBidAmount <= highestBidAmount) {
+                return res.status(400).json({ success: false, message: `Start bid amount must be higher than the highest existing bid (${highestBidAmount}). Please increase your bid amount.` });
+            }
 
             for (const existingBid of existingBids) {
                 existingBid.bidStatus = 'Losing';
@@ -257,10 +276,10 @@ exports.placeAutoBid = async (req, res) => {
         await auction.bids.push(newBid._id);
         await auction.save();
 
-        res.status(200).json({ success: true, message: 'Auto-bid placed successfully' });
+        return res.status(200).json({ status: 200, success: true, message: 'Auto-bid placed successfully' });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ success: false, message: 'Failed to place auto-bid' });
+        return res.status(500).json({ status: 200, success: false, message: 'Failed to place auto-bid' });
     }
 };
 
