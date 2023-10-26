@@ -310,7 +310,11 @@ const updateUserBids = async (req, res) => {
             return res.status(404).json({ status: 404, message: 'User not found' });
         }
 
-        user.myBids = myBids;
+        for (const field in myBids) {
+            if (myBids.hasOwnProperty(field)) {
+                user.myBids[field] = myBids[field];
+            }
+        }
 
         await user.save();
 

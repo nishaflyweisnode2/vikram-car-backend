@@ -40,29 +40,41 @@ exports.createBid = async (req, res) => {
         }
 
         const previousBid = await Bid.findOne({ auction: auctionId, bidStatus: "StartBidding", winStatus: "Underprocess" });
-        console.log("previouBid1", previousBid);
 
         if (previousBid) {
             previousBid.bidStatus = 'Losing';
             previousBid.winStatus = 'Reject';
             await previousBid.save();
-            console.log("previouBid2", previousBid);
 
         }
+
+        const user = await userDb.findById(userId);
+        if (user && user.myBids.startBidAmount === 0) {
+            user.myBids.startBidAmount = amount;
+            await user.save();
+        }
+
+        if (previousBid) {
+            user.myBids.lastBidAmount = previousBid.amount;
+        }
+
+        if (user) {
+            user.myBids.currentBidAmount = amount;
+        }
+        await user.save();
 
         const newBid = new Bid({
             auction: auctionId,
             bidder: userId,
             amount,
-            currentBidAmount: amount,
         });
+        console.log(newBid);
 
         auction.highestBid = amount;
 
         await newBid.save();
         await auction.bids.push(newBid._id);
         await auction.save();
-        console.log("previouBid3", previousBid);
 
         res.status(201).json(newBid);
     } catch (error) {
@@ -168,7 +180,20 @@ exports.updateBidStatus = async (req, res) => {
             await previousBid.save();
         }
 
-        res.status(200).json(bid);
+        const userId = bid.bidder;
+        const user = await userDb.findById(userId);
+
+        if (user && user.myBids) {
+            user.myBids.winBidAmount = bid.amount;
+            // user.myBids.startBidAmount = 0;
+            // user.myBids.currentBidAmount = 0;
+            user.myBids.lastBidAmount = bid.amount;
+            await user.save();
+        } else {
+            return res.status(404).json({ status: 404, message: 'User does not have a bid for this auction' });
+        }
+
+        res.status(200).json({ status: 200, data: bid });
     } catch (error) {
         console.error(error);
         res.status(500).json({ status: 500, message: 'Failed to update bid status' });
@@ -211,7 +236,6 @@ exports.getBidsByUserAndAuction = async (req, res) => {
         res.status(500).json({ status: 500, message: 'Failed to retrieve bids' });
     }
 };
-
 
 
 exports.placeAutoBid = async (req, res) => {
@@ -303,6 +327,9 @@ exports.resetAutoBid = async (req, res) => {
         }
 
         myBidToUpdate.startBidAmount = 0;
+        myBidToUpdate.currentBidAmount = 0;
+        myBidToUpdate.lastBidAmount = 0;
+        myBidToUpdate.winBidAmount = 0;
 
         await user.save();
 
@@ -333,10 +360,14 @@ exports.cancelAutoBid = async (req, res) => {
             return res.status(404).json({ success: false, message: 'User does not have a bid for this auction' });
         }
 
-        myBidToUpdate.autobidEnabled = false;
+        // myBidToUpdate.autobidEnabled = false;
         // myBidToUpdate.autobidMaxBidAmount = 0;
         // myBidToUpdate.bidIncrementAmount = 0;
         // myBidToUpdate.autobidMaxBids = 0;
+        myBidToUpdate.startBidAmount = 0;
+        myBidToUpdate.currentBidAmount = 0;
+        myBidToUpdate.lastBidAmount = 0;
+        myBidToUpdate.winBidAmount = 0;
 
         await user.save();
 

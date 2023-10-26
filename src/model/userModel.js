@@ -71,6 +71,7 @@ const userSchema = new mongoose.Schema({
         },
         startBidAmount: {
             type: Number,
+            default: 0,
         },
         currentBidAmount: {
             type: Number,
