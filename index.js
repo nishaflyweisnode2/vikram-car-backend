@@ -22,6 +22,7 @@ const bannerRoutes = require('./src/routes/bannerRoute');
 const quotesRoutes = require('./src/routes/quotesRoutes');
 const bidRoutes = require('./src/routes/bidRoute');
 const inspectionRoute = require('./src/routes/inspectionRoute');
+const myBid = require('./src/routes/mybidRoute');
 
 
 
@@ -75,6 +76,7 @@ app.use('/banner', bannerRoutes);
 app.use('/quotes', quotesRoutes);
 app.use('/bid', bidRoutes);
 app.use('/inspection', inspectionRoute);
+app.use('/myBid', myBid);
 
 
 

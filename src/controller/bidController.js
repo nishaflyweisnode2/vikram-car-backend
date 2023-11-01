@@ -5,14 +5,92 @@ const Bid = require('../model/bidModel');
 const Auction = require('../model/auctionModel');
 const userDb = require('../model/userModel');
 const Car = require('../model/carModel');
+const MyBids = require('../model/myBidModel');
+
 
 const { bidSchema, bidUpdateSchema } = require('../validation/bidvalidation');
 
 
 
+// exports.createBid = async (req, res) => {
+//     try {
+//         const userId = req.params.userId
+//         const { auctionId, amount } = req.body;
+
+//         const { error } = bidSchema.validate({ userId, auctionId, amount });
+//         if (error) {
+//             return res.status(400).json({ status: 400, message: error.details[0].message });
+//         }
+
+//         const auction = await Auction.findById(auctionId);
+//         if (!auction) {
+//             return res.status(404).json({ status: 404, message: 'Auction not found' });
+//         }
+
+//         if (auction.status !== 'Active') {
+//             return res.status(400).json({ status: 400, message: 'Auction is not currently active for bidding' });
+//         }
+
+//         const currentHighestBid = auction.highestBid;
+
+//         if (amount < currentHighestBid) {
+//             return res.status(400).json({ status: 400, message: 'Bid amount is Less Than Current Bid' });
+//         }
+
+//         if (amount <= currentHighestBid) {
+//             return res.status(400).json({ status: 400, message: 'Your bid must be higher than the current highest bid' });
+//         }
+
+//         const previousBid = await Bid.findOne({ auction: auctionId, bidStatus: "StartBidding", winStatus: "Underprocess" });
+
+//         if (previousBid) {
+//             previousBid.bidStatus = 'Losing';
+//             previousBid.winStatus = 'Reject';
+//             await previousBid.save();
+
+//         }
+
+//         const user = await userDb.findById(userId);
+//         if (user && user.myBids.startBidAmount === 0) {
+//             user.myBids.startBidAmount = amount;
+//             await user.save();
+//         }
+
+//         if (previousBid) {
+//             user.myBids.lastBidAmount = previousBid.amount;
+//         }
+
+//         if (user) {
+//             user.myBids.currentBidAmount = amount;
+//         }
+//         await user.save();
+
+//         const newBid = new Bid({
+//             auction: auctionId,
+//             bidder: userId,
+//             amount,
+//         });
+//         console.log(newBid);
+
+//         auction.highestBid = amount;
+
+//         await newBid.save();
+//         await auction.bids.push(newBid._id);
+//         await auction.save();
+
+//         res.status(201).json(newBid);
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ status: 500, message: 'Failed to create a bid' });
+//     }
+// };
+
+
+
+
 exports.createBid = async (req, res) => {
     try {
-        const userId = req.params.userId
+        const userId = req.params.userId;
         const { auctionId, amount } = req.body;
 
         const { error } = bidSchema.validate({ userId, auctionId, amount });
@@ -31,10 +109,6 @@ exports.createBid = async (req, res) => {
 
         const currentHighestBid = auction.highestBid;
 
-        if (amount < currentHighestBid) {
-            return res.status(400).json({ status: 400, message: 'Bid amount is Less Than Current Bid' });
-        }
-
         if (amount <= currentHighestBid) {
             return res.status(400).json({ status: 400, message: 'Your bid must be higher than the current highest bid' });
         }
@@ -45,30 +119,34 @@ exports.createBid = async (req, res) => {
             previousBid.bidStatus = 'Losing';
             previousBid.winStatus = 'Reject';
             await previousBid.save();
-
         }
 
-        const user = await userDb.findById(userId);
-        if (user && user.myBids.startBidAmount === 0) {
-            user.myBids.startBidAmount = amount;
-            await user.save();
+        let myBids = await MyBids.findOne({ user: userId, auction: auctionId });
+
+        if (!myBids) {
+            myBids = new MyBids({
+                user: userId,
+                auction: auctionId,
+                startBidAmount: amount,
+                currentBidAmount: amount,
+                lastBidAmount: previousBid ? previousBid.amount : 0,
+            });
+        } else if (myBids.startBidAmount === 0) {
+            myBids.startBidAmount = amount;
+            myBids.currentBidAmount = amount;
+        } else {
+            // myBids.startBidAmount = amount;
+            myBids.currentBidAmount = amount;
+            myBids.lastBidAmount = previousBid ? previousBid.amount : 0;
         }
 
-        if (previousBid) {
-            user.myBids.lastBidAmount = previousBid.amount;
-        }
-
-        if (user) {
-            user.myBids.currentBidAmount = amount;
-        }
-        await user.save();
+        await myBids.save();
 
         const newBid = new Bid({
             auction: auctionId,
             bidder: userId,
             amount,
         });
-        console.log(newBid);
 
         auction.highestBid = amount;
 
@@ -76,10 +154,10 @@ exports.createBid = async (req, res) => {
         await auction.bids.push(newBid._id);
         await auction.save();
 
-        res.status(201).json(newBid);
+        return res.status(201).json(newBid);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ status: 500, message: 'Failed to create a bid' });
+        return res.status(500).json({ status: 500, message: 'Failed to create a bid' });
     }
 };
 
@@ -181,14 +259,12 @@ exports.updateBidStatus = async (req, res) => {
         }
 
         const userId = bid.bidder;
-        const user = await userDb.findById(userId);
+        const myBids = await MyBids.findOne({ user: userId, auction: bid.auction });
 
-        if (user && user.myBids) {
-            user.myBids.winBidAmount = bid.amount;
-            // user.myBids.startBidAmount = 0;
-            // user.myBids.currentBidAmount = 0;
-            user.myBids.lastBidAmount = bid.amount;
-            await user.save();
+        if (myBids) {
+            myBids.winBidAmount = bid.amount;
+            myBids.lastBidAmount = bid.amount;
+            await myBids.save();
         } else {
             return res.status(404).json({ status: 404, message: 'User does not have a bid for this auction' });
         }
@@ -238,6 +314,75 @@ exports.getBidsByUserAndAuction = async (req, res) => {
 };
 
 
+// exports.placeAutoBid = async (req, res) => {
+//     try {
+//         const { userId, auctionId } = req.params;
+//         let { startBidAmount } = req.body;
+//         const user = await userDb.findById(userId);
+//         if (!user) {
+//             return res.status(404).json({ success: false, message: 'User not found' });
+//         }
+
+//         const auction = await Auction.findOne({ status: "Active", auctionId });
+//         if (!auction) {
+//             return res.status(404).json({ success: false, message: 'Auction not found' });
+//         }
+
+//         if (!user.myBids.autobidEnabled) {
+//             return res.status(400).json({ success: false, message: 'Auto-bidding is not enabled for this user' });
+//         }
+
+//         // const existingBids = await Bid.find({ auction: auctionId });
+//         const existingBids = await Bid.find({ auction: auctionId, bidStatus: "StartBidding", winStatus: "Underprocess" });
+
+//         if (existingBids.length > 0) {
+//             console.log('Found existing bids:', existingBids);
+
+//             const highestBidAmount = Math.max(...existingBids.map(bid => bid.amount));
+
+//             if (startBidAmount <= highestBidAmount) {
+//                 return res.status(400).json({ success: false, message: `Start bid amount must be higher than the highest existing bid (${highestBidAmount}). Please increase your bid amount.` });
+//             }
+
+//             for (const existingBid of existingBids) {
+//                 existingBid.bidStatus = 'Losing';
+//                 existingBid.winStatus = 'Backout';
+
+//                 try {
+//                     await existingBid.save();
+//                     console.log('Updated existing bid:', existingBid);
+//                 } catch (error) {
+//                     console.error('Error updating existing bid:', error);
+//                 }
+//             }
+//         }
+
+//         user.myBids.startBidAmount = startBidAmount;
+//         await user.save();
+
+//         const newBidAmount = startBidAmount;
+
+//         const newBid = new Bid({
+//             auction: auctionId,
+//             bidder: userId,
+//             amount: newBidAmount,
+//             bidStatus: 'StartBidding',
+//             winStatus: 'Underprocess',
+//         });
+
+//         auction.highestBid = newBidAmount;
+
+//         await newBid.save();
+//         await auction.bids.push(newBid._id);
+//         await auction.save();
+
+//         return res.status(200).json({ status: 200, success: true, message: 'Auto-bid placed successfully' });
+//     } catch (error) {
+//         console.error(error);
+//         return res.status(500).json({ status: 200, success: false, message: 'Failed to place auto-bid' });
+//     }
+// };
+
 exports.placeAutoBid = async (req, res) => {
     try {
         const { userId, auctionId } = req.params;
@@ -252,16 +397,15 @@ exports.placeAutoBid = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Auction not found' });
         }
 
-        if (!user.myBids.autobidEnabled) {
+        const myBids = await MyBids.findOne({ user: userId, auction: auctionId });
+
+        if (!myBids || !myBids.autobidEnabled) {
             return res.status(400).json({ success: false, message: 'Auto-bidding is not enabled for this user' });
         }
 
-        // const existingBids = await Bid.find({ auction: auctionId });
         const existingBids = await Bid.find({ auction: auctionId, bidStatus: "StartBidding", winStatus: "Underprocess" });
 
         if (existingBids.length > 0) {
-            console.log('Found existing bids:', existingBids);
-
             const highestBidAmount = Math.max(...existingBids.map(bid => bid.amount));
 
             if (startBidAmount <= highestBidAmount) {
@@ -274,15 +418,33 @@ exports.placeAutoBid = async (req, res) => {
 
                 try {
                     await existingBid.save();
-                    console.log('Updated existing bid:', existingBid);
                 } catch (error) {
                     console.error('Error updating existing bid:', error);
                 }
             }
         }
 
-        user.myBids.startBidAmount = startBidAmount;
-        await user.save();
+        if (!myBids) {
+            myBids = new MyBids({
+                user: userId,
+                auction: auctionId,
+                startBidAmount: startBidAmount,
+                currentBidAmount: startBidAmount,
+                lastBidAmount: existingBids.length > 0 ? Math.max(...existingBids.map(bid => bid.amount)) : 0,
+
+            });
+        } else if (myBids.startBidAmount === 0) {
+            myBids.startBidAmount = startBidAmount;
+            myBids.currentBidAmount = startBidAmount;
+        } else {
+            // myBids.startBidAmount = amount;
+            myBids.currentBidAmount = startBidAmount;
+            myBids.lastBidAmount = existingBids.length > 0 ? Math.max(...existingBids.map(bid => bid.amount)) : 0;
+        }
+
+
+        await myBids.save();
+
 
         const newBidAmount = startBidAmount;
 
@@ -307,7 +469,6 @@ exports.placeAutoBid = async (req, res) => {
     }
 };
 
-
 exports.resetAutoBid = async (req, res) => {
     try {
         const { userId, auctionId } = req.params;
@@ -321,17 +482,17 @@ exports.resetAutoBid = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Auction not found' });
         }
 
-        const myBidToUpdate = user.myBids;
-        if (!myBidToUpdate) {
+        const myBids = await MyBids.findOne({ user: userId, auction: auctionId });
+        if (!myBids) {
             return res.status(404).json({ success: false, message: 'User does not have a bid for this auction' });
         }
 
-        myBidToUpdate.startBidAmount = 0;
-        myBidToUpdate.currentBidAmount = 0;
-        myBidToUpdate.lastBidAmount = 0;
-        myBidToUpdate.winBidAmount = 0;
+        myBids.startBidAmount = 0;
+        myBids.currentBidAmount = 0;
+        myBids.lastBidAmount = 0;
+        myBids.winBidAmount = 0;
 
-        await user.save();
+        await myBids.save();
 
         res.status(200).json({ success: true, message: 'Auto-bid settings reset successfully' });
     } catch (error) {
@@ -354,20 +515,19 @@ exports.cancelAutoBid = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Auction not found' });
         }
 
-        const myBidToUpdate = user.myBids;
-
-        if (!myBidToUpdate) {
+        const myBids = await MyBids.findOne({ user: userId, auction: auctionId });
+        if (!myBids) {
             return res.status(404).json({ success: false, message: 'User does not have a bid for this auction' });
         }
 
-        // myBidToUpdate.autobidEnabled = false;
-        // myBidToUpdate.autobidMaxBidAmount = 0;
-        // myBidToUpdate.bidIncrementAmount = 0;
-        // myBidToUpdate.autobidMaxBids = 0;
-        myBidToUpdate.startBidAmount = 0;
-        myBidToUpdate.currentBidAmount = 0;
-        myBidToUpdate.lastBidAmount = 0;
-        myBidToUpdate.winBidAmount = 0;
+        // myBids.autobidEnabled = false;
+        // myBids.autobidMaxBidAmount = 0;
+        // myBids.bidIncrementAmount = 0;
+        // myBids.autobidMaxBids = 0;
+        myBids.startBidAmount = 0;
+        myBids.currentBidAmount = 0;
+        myBids.lastBidAmount = 0;
+        myBids.winBidAmount = 0;
 
         await user.save();
 
