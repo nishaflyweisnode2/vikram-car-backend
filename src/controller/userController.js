@@ -8,6 +8,7 @@ const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
 const twilio = require('twilio');
 const Bid = require('../model/bidModel');
+const MyBids = require('../model/myBidModel');
 
 
 const { addToFavouritesSchema, addToMyBidSchema, addMyBidSchema, getMyWinsSchema } = require('../validation/uservalidation');
@@ -548,122 +549,6 @@ const getToMyBid = async (req, res) => {
 };
 
 
-
-const startAutobid = async (req, res) => {
-    try {
-        const { auctionId } = req.params;
-        const { userId, autobidMaxBidAmount, bidIncrement } = req.body;
-
-        const user = await userDb.findById(userId);
-        const auction = await Auction.findById(auctionId);
-
-        if (!user || !auction) {
-            return res.status(404).json({ status: 404, message: 'User or auction not found' });
-        }
-        const myBidToUpdate = user.myBids.find(bid => bid.auction.toString() === auctionId);
-
-        if (!myBidToUpdate) {
-            return res.status(404).json({ status: 404, message: 'User does not have a bid for this auction' });
-        }
-        myBidToUpdate.autobidEnabled = true;
-        myBidToUpdate.autobidMaxBidAmount = autobidMaxBidAmount;
-        myBidToUpdate.bidIncrement = bidIncrement;
-        myBidToUpdate.autobidMaxBids = 1000;
-
-        if (!myBidToUpdate.autobidEnabled) {
-            return res.status(400).json({ status: 400, message: 'Autobid is not enabled for this user' });
-        }
-
-        if (user.balance < myBidToUpdate.autobidMaxBidAmount) {
-            return res.status(400).json({ status: 400, message: 'Insufficient balance for autobid' });
-        }
-
-        let currentBidAmount = auction.highestBid + myBidToUpdate.bidIncrement;
-        let bidsPlaced = 0;
-
-        while (bidsPlaced < myBidToUpdate.autobidMaxBids && user.balance >= currentBidAmount) {
-
-            user.balance -= currentBidAmount;
-            myBidToUpdate.lastBidAmount = currentBidAmount;
-            myBidToUpdate.bidsPlaced++;
-            currentBidAmount += myBidToUpdate.bidIncrement;
-            bidsPlaced++;
-        }
-
-        await user.save();
-
-        res.status(200).json({ status: 200, message: 'Autobid started successfully' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Failed to start autobid' });
-    }
-};
-
-
-
-const resetAutobid = async (req, res) => {
-    try {
-        const { auctionId } = req.params;
-        const userId = req.body.userId;
-
-        const user = await userDb.findById(userId);
-        const auction = await Auction.findById(auctionId);
-
-        if (!user || !auction) {
-            return res.status(404).json({ status: 404, message: 'User or auction not found' });
-        }
-        const myBidToReset = user.myBids.find(bid => bid.auction.toString() === auctionId);
-
-        if (!myBidToReset) {
-            return res.status(404).json({ status: 404, message: 'User does not have a bid for this auction' });
-        }
-
-        myBidToReset.autobidEnabled = false;
-        myBidToReset.autobidMaxBidAmount = 0;
-        myBidToReset.autobidMaxBids = 0;
-
-        await user.save();
-
-        res.status(200).json({ status: 200, message: 'Autobid settings reset successfully' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Failed to reset autobid settings' });
-    }
-};
-
-
-
-const cancelAutobid = async (req, res) => {
-    try {
-        const { auctionId } = req.params;
-        const userId = req.body.userId;
-
-        const user = await userDb.findById(userId);
-        const auction = await Auction.findById(auctionId);
-
-        if (!user || !auction) {
-            return res.status(404).json({ status: 404, message: 'User or auction not found' });
-        }
-
-        const myBidToCancel = user.myBids.find(bid => bid.auction.toString() === auctionId);
-
-        if (!myBidToCancel) {
-            return res.status(404).json({ status: 404, message: 'User does not have a bid for this auction' });
-        }
-
-        myBidToCancel.autobidEnabled = false;
-
-        await user.save();
-
-        res.status(200).json({ status: 200, message: 'Autobid canceled successfully' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Failed to cancel autobid' });
-    }
-};
-
-
-
 const getMyWins = async (req, res) => {
     try {
         const { error } = getMyWinsSchema.validate(req.params);
@@ -764,24 +649,28 @@ const getFavoriteCars = async (req, res) => {
 const getMyBids = async (req, res) => {
     try {
         const userId = req.params.userId;
-        const user = await userDb.findById(userId).populate({
-            path: 'myBids',
-            populate: [
-                { path: 'car', model: 'Car' },
-                { path: 'auction', model: 'Auction' },
-            ],
+        const myBids = await MyBids.find({ user: userId }).populate({
+            path: 'auction',
+            model: 'Auction',
         });
 
-        if (!user || user.length === 0) {
-            return res.status(404).json({ status: 404, message: 'No user found for this userId' });
+        if (!myBids || myBids.length === 0) {
+            return res.status(404).json({ status: 404, message: 'No bids found for this user' });
         }
 
-        const myBids = user.myBids;
+        await MyBids.populate(myBids, { path: 'user', model: 'User' });
+
+        const auctionIds = myBids.map(bid => bid.auction._id);
+        const bids = await Bid.find({ auction: { $in: auctionIds } });
+
+        myBids.forEach(bid => {
+            bid.auction.bids = bids.filter(b => b.auction.equals(bid.auction._id));
+        });
 
         res.status(200).json({ status: 200, myBids });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Failed to fetch user bids' });
+        res.status(500).json({ status: 500, message: 'Failed to fetch user bids' });
     }
 };
 
@@ -835,7 +724,4 @@ module.exports = {
     getMyBids,
     getAllUsers,
     getUserById,
-    startAutobid,
-    resetAutobid,
-    cancelAutobid
 };

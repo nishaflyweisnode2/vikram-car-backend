@@ -113,6 +113,18 @@ exports.createBid = async (req, res) => {
             return res.status(400).json({ status: 400, message: 'Your bid must be higher than the current highest bid' });
         }
 
+        if (amount < auction.startingPrice) {
+            return res.status(400).json({ success: false, message: `Your bid must be equal to or higher than the starting price (${auction.startingPrice}). Please increase your bid amount.` });
+        }
+
+        if (amount >= auction.finalPrice) {
+            console.log("Setting winner:", userId);
+            auction.winner = userId;
+            auction.status = 'Closed';
+        } else {
+            console.log("Bid amount doesn't match finalPrice.");
+        }
+
         const previousBid = await Bid.findOne({ auction: auctionId, bidStatus: "StartBidding", winStatus: "Underprocess" });
 
         if (previousBid) {
@@ -140,18 +152,26 @@ exports.createBid = async (req, res) => {
             myBids.lastBidAmount = previousBid ? previousBid.amount : 0;
         }
 
+        if (amount >= auction.finalPrice) {
+            myBids.winBidAmount = amount;
+        }
+
         await myBids.save();
 
         const newBid = new Bid({
             auction: auctionId,
             bidder: userId,
             amount,
+            bidStatus: amount >= auction.finalPrice ? 'Winning' : 'StartBidding',
+
         });
 
         auction.highestBid = amount;
 
         await newBid.save();
+
         await auction.bids.push(newBid._id);
+
         await auction.save();
 
         return res.status(201).json(newBid);
@@ -281,7 +301,7 @@ exports.getBidsForAuction = async (req, res) => {
     try {
         const auctionId = req.params.auctionId;
         const bids = await Bid.find({ auction: auctionId });
-        res.status(200).json(bids);
+        res.status(200).json({ status: 200, data: bids });
     } catch (error) {
         console.error(error);
         res.status(500).json({ status: 500, message: 'Failed to retrieve bids' });
@@ -397,10 +417,16 @@ exports.placeAutoBid = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Auction not found' });
         }
 
-        const myBids = await MyBids.findOne({ user: userId, auction: auctionId });
+        if (startBidAmount < auction.startingPrice) {
+            return res.status(400).json({ success: false, message: `Your bid must be equal to or higher than the starting price (${auction.startingPrice}). Please increase your bid amount.` });
+        }
 
-        if (!myBids || !myBids.autobidEnabled) {
-            return res.status(400).json({ success: false, message: 'Auto-bidding is not enabled for this user' });
+        let myBids = await MyBids.findOne({ user: userId, auction: auctionId });
+
+        if (myBids) {
+            if (!myBids || !myBids.autobidEnabled) {
+                return res.status(400).json({ success: false, message: 'Auto-bidding is not enabled for this user' });
+            }
         }
 
         const existingBids = await Bid.find({ auction: auctionId, bidStatus: "StartBidding", winStatus: "Underprocess" });
@@ -442,9 +468,7 @@ exports.placeAutoBid = async (req, res) => {
             myBids.lastBidAmount = existingBids.length > 0 ? Math.max(...existingBids.map(bid => bid.amount)) : 0;
         }
 
-
         await myBids.save();
-
 
         const newBidAmount = startBidAmount;
 
@@ -462,10 +486,46 @@ exports.placeAutoBid = async (req, res) => {
         await auction.bids.push(newBid._id);
         await auction.save();
 
-        return res.status(200).json({ status: 200, success: true, message: 'Auto-bid placed successfully' });
+        if (newBidAmount >= auction.finalPrice) {
+            auction.status = 'Closed';
+            auction.winner = userId;
+            newBid.bidStatus = 'Winning';
+            myBids.winBidAmount = newBidAmount;
+
+            let message = '';
+            if (newBidAmount === auction.finalPrice) {
+                message = 'Congratulations! You won the auction!';
+            } else {
+                message = 'You didn\'t win the auction. Better luck next time.';
+            }
+
+            const response = {
+                status: 200,
+                success: true,
+                message: message,
+            };
+            await auction.save();
+            await newBid.save();
+            await myBids.save();
+
+            return res.status(200).json(response);
+        }
+
+        await auction.save();
+        await newBid.save();
+        await myBids.save();
+
+        const response = {
+            status: 200,
+            success: true,
+            message: 'Auto-bid placed successfully You are currently the highest bidder. Keep an eye on the auction!',
+        };
+
+        // return res.status(200).json({ status: 200, success: true, message: 'Auto-bid placed successfully' });
+        return res.status(200).json(response);
     } catch (error) {
         console.error(error);
-        return res.status(500).json({ status: 200, success: false, message: 'Failed to place auto-bid' });
+        return res.status(500).json({ status: 500, success: false, message: 'Failed to place auto-bid' });
     }
 };
 
@@ -494,10 +554,10 @@ exports.resetAutoBid = async (req, res) => {
 
         await myBids.save();
 
-        res.status(200).json({ success: true, message: 'Auto-bid settings reset successfully' });
+        res.status(200).json({ status: 200, success: true, message: 'Auto-bid settings reset successfully' });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ success: false, message: 'Failed to reset auto-bid settings' });
+        res.status(500).json({ status: 500, success: false, message: 'Failed to reset auto-bid settings' });
     }
 };
 
@@ -529,12 +589,17 @@ exports.cancelAutoBid = async (req, res) => {
         myBids.lastBidAmount = 0;
         myBids.winBidAmount = 0;
 
-        await user.save();
+        await myBids.save();
 
-        res.status(200).json({ success: true, message: 'Auto-bid settings canceled successfully' });
+        await Bid.updateMany(
+            { auction: auctionId, bidder: userId, bidStatus: 'StartBidding', winStatus: 'Underprocess' },
+            { $set: { winStatus: 'Backout' } }
+        );
+
+        res.status(200).json({ status: 200, success: true, message: 'Auto-bid settings canceled successfully' });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ success: false, message: 'Failed to cancel auto-bid settings' });
+        res.status(500).json({ status: 500, success: false, message: 'Failed to cancel auto-bid settings' });
     }
 };
 

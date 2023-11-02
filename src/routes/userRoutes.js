@@ -27,9 +27,6 @@ router.get('/favorite-car/:userId', authenticateUser, authorization, getFavorite
 router.get('/:userId/bids', authenticateUser, getMyBids);
 router.get('/allUser', getAllUsers);
 router.get('/:userId', getUserById);
-router.post('/autobid/start/:auctionId', authenticateUser, startAutobid);
-router.post('/autobid/reset/:auctionId', authenticateUser, resetAutobid);
-router.post('/autobid/cancel/:auctionId', authenticateUser, cancelAutobid);
 
 
 

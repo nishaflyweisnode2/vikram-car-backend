@@ -64,52 +64,6 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 0,
     },
-    myBids:
-    {
-        bidLimit: {
-            type: Number,
-        },
-        startBidAmount: {
-            type: Number,
-            default: 0,
-        },
-        currentBidAmount: {
-            type: Number,
-            default: 0,
-        },
-        winBidAmount: {
-            type: Number,
-            default: 0,
-        },
-        autobidEnabled: {
-            type: Boolean,
-            default: false,
-        },
-        autobidMaxBidAmount: {
-            type: Number,
-            default: 0,
-        },
-        bidIncrementAmount: {
-            type: Number,
-            default: 0,
-        },
-        lastBidAmount: {
-            type: Number,
-            default: 0,
-        },
-        autobidMaxBids: {
-            type: Number,
-            default: 0,
-        },
-        autoDecreaseEnabled: {
-            type: Boolean,
-            default: false,
-        },
-        bidDecrementAmount: {
-            type: Number,
-            default: 0,
-        },
-    },
     subscription: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Subscription',

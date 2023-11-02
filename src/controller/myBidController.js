@@ -70,3 +70,18 @@ exports.deleteMyBidsById = async (req, res) => {
         return res.status(500).json({ status: 500, message: 'Failed to delete MyBids document' });
     }
 };
+
+
+exports.getMyBidsByUserId = async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const myBids = await MyBids.find({ user: userId }).populate('user', 'mobileNumber fullName').populate('auction');
+        if (!myBids || myBids.length === 0) {
+            return res.status(404).json({ status: 404, message: 'MyBids documents not found for this user' });
+        }
+        return res.status(200).json({ status: 200, data: myBids });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ status: 500, message: 'Failed to retrieve MyBids documents for this user' });
+    }
+};

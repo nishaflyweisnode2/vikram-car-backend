@@ -11,6 +11,7 @@ const myBidsSchema = new mongoose.Schema({
     },
     bidLimit: {
         type: Number,
+        default: 0,
     },
     startBidAmount: {
         type: Number,
@@ -37,10 +38,6 @@ const myBidsSchema = new mongoose.Schema({
         default: 0,
     },
     lastBidAmount: {
-        type: Number,
-        default: 0,
-    },
-    autobidMaxBids: {
         type: Number,
         default: 0,
     },

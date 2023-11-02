@@ -3,6 +3,8 @@ const userDb = require('../model/userModel');
 const City = require('../model/cityModel');
 const Car = require('../model/carModel');
 const Bid = require('../model/bidModel');
+const MyBids = require('../model/myBidModel');
+
 const { DateTime } = require('luxon');
 
 
@@ -310,21 +312,81 @@ const updateUserBids = async (req, res) => {
             return res.status(404).json({ status: 404, message: 'User not found' });
         }
 
+        let myBid = await MyBids.findOne({ user: userId, auction: myBids.auction });
+
+        if (!myBid) {
+            myBid = new MyBids({
+                user: userId,
+                auction: myBids.auction,
+            });
+        }
+
         for (const field in myBids) {
             if (myBids.hasOwnProperty(field)) {
-                user.myBids[field] = myBids[field];
+                myBid[field] = myBids[field];
             }
         }
 
-        await user.save();
+        await myBid.save();
 
-        res.status(200).json(user);
+        res.status(200).json(myBid);
     } catch (error) {
         console.error(error);
         res.status(500).json({ status: 500, message: 'Failed to update user bids' });
     }
 };
 
+
+
+const updateFinalPrice = async (req, res) => {
+    try {
+        const auctionId = req.params.auctionId;
+        const finalPrice = req.body.finalPrice;
+
+        const auction = await Auction.findById(auctionId);
+
+        if (!auction) {
+            return res.status(404).json({ status: 404, success: false, message: 'Auction not found' });
+        }
+
+        auction.finalPrice = finalPrice;
+
+        await auction.save();
+
+        return res.status(200).json({ status: 200, success: true, message: 'Final price updated successfully', auction });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ status: 500, success: false, message: 'Failed to update final price' });
+    }
+};
+
+
+
+const auctionHint = async (req, res) => {
+    try {
+        const auctionId = req.params.auctionId;
+
+        const auction = await Auction.findById(auctionId);
+
+        if (!auction) {
+            return res.status(404).json({ success: false, message: 'Auction not found' });
+        }
+
+        const highestBid = await Bid.findOne({ auction: auctionId }).sort({ amount: -1 });
+
+        return res.status(200).json({
+            success: true,
+            auction: {
+                startingPrice: auction.startingPrice,
+                finalPrice: auction.finalPrice,
+                highestBid: highestBid ? highestBid.amount : 0,
+            },
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ success: false, message: 'Failed to get auction details' });
+    }
+};
 
 
 
@@ -338,5 +400,7 @@ module.exports = {
     updateAuction,
     activateAuction,
     closeAuction,
-    updateUserBids
+    updateUserBids,
+    updateFinalPrice,
+    auctionHint
 };

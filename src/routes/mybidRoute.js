@@ -8,6 +8,7 @@ router.post('/mybids', authenticateUser, myBidsController.createMyBids);
 router.get('/mybids/:myBidsId', authenticateUser, myBidsController.getMyBidsById);
 router.put('/mybids/:myBidsId', authenticateUser, myBidsController.updateMyBidsById);
 router.delete('/mybids/:myBidsId', authenticateUser, myBidsController.deleteMyBidsById);
+router.get('/myBids/user/:userId', authenticateUser, myBidsController.getMyBidsByUserId);
 
 
 module.exports = router;
