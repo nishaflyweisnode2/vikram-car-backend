@@ -108,6 +108,8 @@ exports.createBid = async (req, res) => {
         }
 
         const currentHighestBid = auction.highestBid;
+        const remainingTime = (new Date(auction.endTime) - new Date()) / 1000;
+        console.log("remaningTime", remainingTime);
 
         if (amount <= currentHighestBid) {
             return res.status(400).json({ status: 400, message: 'Your bid must be higher than the current highest bid' });
@@ -117,13 +119,41 @@ exports.createBid = async (req, res) => {
             return res.status(400).json({ success: false, message: `Your bid must be equal to or higher than the starting price (${auction.startingPrice}). Please increase your bid amount.` });
         }
 
-        if (amount >= auction.finalPrice) {
+
+        if (remainingTime < 120 && amount > auction.finalPrice && !auction.timeExtended) {
+            auction.endTime = new Date(auction.endTime.getTime() + 120000);
+            auction.approvalTime = (new Date(auction.endTime) - new Date()).toString();
+            auction.timeExtended = true;
+
+            const previousBids = await Bid.find({ auction: auctionId, /*bidStatus: "StartBidding", winStatus: "Underprocess"*/ });
+            for (const previousBid of previousBids) {
+                previousBid.bidStatus = 'Losing';
+                previousBid.winStatus = 'Reject';
+
+                try {
+                    await previousBid.save();
+                } catch (error) {
+                    console.error('Error updating previous bid:', error);
+                }
+            }
+        } else if (amount >= auction.finalPrice) {
             console.log("Setting winner:", userId);
             auction.winner = userId;
             auction.status = 'Closed';
         } else {
             console.log("Bid amount doesn't match finalPrice.");
         }
+
+
+        console.log("approvaltime", auction.approvalTime);
+
+        // if (amount >= auction.finalPrice) {
+        //     console.log("Setting winner:", userId);
+        //     auction.winner = userId;
+        //     auction.status = 'Closed';
+        // } else {
+        //     console.log("Bid amount doesn't match finalPrice.");
+        // }
 
         const previousBid = await Bid.findOne({ auction: auctionId, bidStatus: "StartBidding", winStatus: "Underprocess" });
 
@@ -403,6 +433,7 @@ exports.getBidsByUserAndAuction = async (req, res) => {
 //     }
 // };
 
+
 exports.placeAutoBid = async (req, res) => {
     try {
         const { userId, auctionId } = req.params;
@@ -450,6 +481,37 @@ exports.placeAutoBid = async (req, res) => {
             }
         }
 
+        const remainingTime = (new Date(auction.endTime) - new Date()) / 1000;
+        console.log("remaningTime", remainingTime);
+
+
+        if (remainingTime < 120 && startBidAmount > auction.finalPrice && !auction.timeExtended) {
+            auction.endTime = new Date(auction.endTime.getTime() + 120000);
+            auction.approvalTime = (new Date(auction.endTime) - new Date()).toString();
+            auction.timeExtended = true;
+
+            const previousBids = await Bid.find({ auction: auctionId });
+            for (const previousBid of previousBids) {
+                previousBid.bidStatus = 'Losing';
+                previousBid.winStatus = 'Reject';
+
+                try {
+                    await previousBid.save();
+                } catch (error) {
+                    console.error('Error updating previous bid:', error);
+                }
+            }
+        } else if (startBidAmount >= auction.finalPrice) {
+            console.log("Setting winner:", userId);
+            auction.winner = userId;
+            auction.status = 'Closed';
+        } else {
+            console.log("Bid amount doesn't match finalPrice.");
+        }
+
+        console.log("approvaltime", auction.approvalTime);
+
+
         if (!myBids) {
             myBids = new MyBids({
                 user: userId,
@@ -496,7 +558,7 @@ exports.placeAutoBid = async (req, res) => {
             newBid.isAutobid = true;
 
             let message = '';
-            if (newBidAmount === auction.finalPrice) {
+            if (newBidAmount >= auction.finalPrice) {
                 message = 'Congratulations! You won the auction!';
             } else {
                 message = 'You didn\'t win the auction. Better luck next time.';

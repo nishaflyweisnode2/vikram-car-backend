@@ -539,7 +539,7 @@ const getToMyBid = async (req, res) => {
         }
         const getToMyBidId = user.addToMyBids;
         const getMyBid = user.myBids;
-        const myBids = await Auction.find({ _id: { $in: getToMyBidId } }).populate('car');
+        const myBids = await Auction.find({ _id: { $in: getToMyBidId } }).populate('car').populate('bids');
 
         res.status(200).json({ status: 200, myBids, getMyBid });
     } catch (error) {

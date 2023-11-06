@@ -65,6 +65,10 @@ const auctionSchema = new mongoose.Schema({
             ref: 'Bid',
         },
     ],
+    timeExtended: {
+        type: Boolean,
+        default: false
+    },
 
 
 }, { timestamps: true });
