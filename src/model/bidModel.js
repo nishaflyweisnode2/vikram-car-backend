@@ -26,6 +26,10 @@ const bidSchema = new mongoose.Schema({
         enum: ['Underprocess', 'Backout', 'Uplifted', 'Approve', 'Reject'],
         default: 'Underprocess',
     },
+    isAutobid: {
+        type: Boolean,
+        default: false
+    }
 
 }, { timestamps: true });
 

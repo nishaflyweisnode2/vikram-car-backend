@@ -478,6 +478,7 @@ exports.placeAutoBid = async (req, res) => {
             amount: newBidAmount,
             bidStatus: 'StartBidding',
             winStatus: 'Underprocess',
+            isAutobid: true,
         });
 
         auction.highestBid = newBidAmount;
@@ -491,6 +492,8 @@ exports.placeAutoBid = async (req, res) => {
             auction.winner = userId;
             newBid.bidStatus = 'Winning';
             myBids.winBidAmount = newBidAmount;
+
+            newBid.isAutobid = true;
 
             let message = '';
             if (newBidAmount === auction.finalPrice) {
