@@ -231,11 +231,11 @@ const signup = async (req, res) => {
 
         await user.save();
 
-        res.status(201).json({ status: 201, message: 'Signup successful', user });
+        return res.status(201).json({ status: 201, message: 'Signup successful', user });
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Failed to create user' });
+        return res.status(500).json({ error: 'Failed to create user' });
     }
 };
 
@@ -274,7 +274,7 @@ const verifyOTP = async (req, res) => {
         user.isVerified = true;
         await user.save();
 
-        res.status(200).json({ status: 200, message: "OTP verified successfully" });
+        return res.status(200).json({ status: 200, message: "OTP verified successfully" });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to verify OTP' });
@@ -338,7 +338,7 @@ const verifyOTP = async (req, res) => {
 //                     res.status(500).json({ error: 'Failed to send OTP via email' });
 //                 } else {
 //                     console.log('OTP sent successfully via email:', info.response);
-//                     res.status(200).json({ status: 200, message: "OTP sent successfully" });
+//                     return res.status(200).json({ status: 200, message: "OTP sent successfully" });
 //                 }
 //             });
 //         } else if (mobileNumber) {
@@ -441,7 +441,7 @@ const resendOTP = async (req, res) => {
         await user.save();
 
         if (email || mobileNumber) {
-            res.status(200).json({ status: 200, message: 'OTP generated and saved in the database' });
+            return res.status(200).json({ status: 200, message: 'OTP generated and saved in the database' });
         } else {
             return res.status(400).json({ status: 400, message: "Email or Mobile Number is required" });
         }
@@ -462,7 +462,7 @@ const sendOtpViaSMS = (mobileNumber, otp, res) => {
         })
         .then((message) => {
             console.log(`SMS sent with SID: ${message.sid}`);
-            res.status(200).json({ status: 200, message: "OTP resent successfully" });
+            return res.status(200).json({ status: 200, message: "OTP resent successfully" });
         })
         .catch((error) => {
             console.error('Error sending SMS:', error);
@@ -619,7 +619,7 @@ const addToFavourites = async (req, res) => {
         // user.favouriteCars.push(carId);
         await user.save();
 
-        res.status(200).json({ status: 200, message: 'Car added to favorites successfully' });
+        return res.status(200).json({ status: 200, message: 'Car added to favorites successfully' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to add car to favorites' });
@@ -655,7 +655,7 @@ const updateWorkProfile = async (req, res) => {
             return res.status(404).json({ status: 404, message: 'Vendor not found' });
         }
 
-        res.status(200).json({ status: 200, message: 'Work profile updated successfully', vendor });
+        return res.status(200).json({ status: 200, message: 'Work profile updated successfully', vendor });
 
     } catch (error) {
         console.error(error);
@@ -688,7 +688,7 @@ const updateDocuments = async (req, res) => {
             return res.status(404).json({ status: 404, message: 'Vendor not found' });
         }
 
-        res.status(200).json({ status: 200, message: 'Documents updated successfully', vendor });
+        return res.status(200).json({ status: 200, message: 'Documents updated successfully', vendor });
 
     } catch (error) {
         console.error(error);
@@ -890,7 +890,7 @@ const searchCars = async (req, res) => {
         if (!cars || cars.length === 0) {
             return res.status(404).json({ status: 404, message: 'No cars found' });
         }
-        res.status(200).json({
+        return res.status(200).json({
             status: 200,
             message: 'Car search results',
             cars,
