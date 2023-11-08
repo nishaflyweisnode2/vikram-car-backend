@@ -4,6 +4,7 @@ const City = require('../model/cityModel');
 const Car = require('../model/carModel');
 const Bid = require('../model/bidModel');
 const MyBids = require('../model/myBidModel');
+const mongoose = require('mongoose');
 
 const { DateTime } = require('luxon');
 
@@ -362,7 +363,7 @@ const updateFinalPrice = async (req, res) => {
 
 
 
-const auctionHint = async (req, res) => {
+const auctionHint1 = async (req, res) => {
     try {
         const auctionId = req.params.auctionId;
 
@@ -387,6 +388,45 @@ const auctionHint = async (req, res) => {
         return res.status(500).json({ success: false, message: 'Failed to get auction details' });
     }
 };
+
+
+const auctionHint = async (req, res) => {
+    try {
+        const auctionId = req.params.auctionId;
+        const userId = req.params.userId;
+
+        const auction = await Auction.findById(auctionId);
+
+        if (!auction) {
+            return res.status(404).json({ success: false, message: 'Auction not found' });
+        }
+
+        const highestBid = await Bid.findOne({ auction: auctionId }).sort({ amount: -1 });
+
+
+        const userBid = await Bid.findOne({ auction: auctionId, bidder: userId }).sort({ createdAt: -1 });
+
+        console.log("1", userId);
+        console.log(userBid);
+
+        return res.status(200).json({
+            success: true,
+            auction: {
+                startingPrice: auction.startingPrice,
+                finalPrice: auction.finalPrice,
+                highestBid: auction.highestBid,
+                endTime: auction.endTime,
+            },
+            userBidStatus: userBid ? userBid.bidStatus : 'No bids',
+            userWintatus: userBid ? userBid.winStatus : 'No bids',
+            userHighestBid: highestBid ? highestBid.amount : 0,
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ success: false, message: 'Failed to get auction details' });
+    }
+};
+
 
 
 

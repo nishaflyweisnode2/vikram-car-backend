@@ -16,7 +16,7 @@ router.put('/activate/:auctionId', authenticateUser, activateAuction);
 router.put('/close/:auctionId', authenticateUser, closeAuction);
 router.put('/:userId/myBids', authenticateUser, authenticateAdmin, updateUserBids);
 router.put('/auctions/:auctionId/update-final-price', authenticateUser, authenticateAdmin, updateFinalPrice);
-router.get('/auctions/:auctionId/details', authenticateUser, auctionHint);
+router.get('/auctions/:auctionId/details/:userId', authenticateUser, auctionHint);
 
 
 
