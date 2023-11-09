@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const { createCar, getCars, getCarById, updateCarImage, getCarsByBuyingOption, searchCars, compareCars, buyCar, addCarRating, getCarRatings } = require('../controller/carController');
-const { authenticateUser, authorizeUser, authorization, authenticateAdmin } = require("../middleware/auth");
+const { authenticateUser, authorizeUser, authorization, authenticateAdmin, authenticateVendor } = require("../middleware/auth");
 
 
 
-router.post('/create-car', authenticateUser, authenticateAdmin, createCar);
+router.post('/create-car', /*authenticateUser, authenticateAdmin,*/ authenticateVendor, createCar);
 router.get('/car', authenticateUser, getCars);
 router.get('/:carId', getCarById);
 router.put('/update/:carId/image', authenticateUser, authenticateAdmin, updateCarImage);

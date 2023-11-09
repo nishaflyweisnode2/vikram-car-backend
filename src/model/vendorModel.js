@@ -5,17 +5,14 @@ const mongoose = require('mongoose');
 const vendorSchema = new mongoose.Schema({
     fullName: {
         type: String,
-        required: true,
     },
     email: {
         type: String,
-        required: true,
         unique: true,
         lowercase: true,
     },
     mobileNumber: {
         type: String,
-        required: true,
         unique: true,
     },
     password: {
@@ -24,7 +21,6 @@ const vendorSchema = new mongoose.Schema({
     },
     otp: {
         type: String,
-        required: true,
     },
     isVerified: {
         type: Boolean,
@@ -38,16 +34,13 @@ const vendorSchema = new mongoose.Schema({
     documents: {
         name: {
             type: String,
-            required: true,
         },
         email: {
             type: String,
-            required: true,
             lowercase: true,
         },
         phone: {
             type: String,
-            required: true,
         },
         gender: {
             type: String,
@@ -60,20 +53,17 @@ const vendorSchema = new mongoose.Schema({
         panCardImage: [
             {
                 type: String,
-                required: true,
             },
         ],
         aadharCardImage: [
             {
                 type: String,
-                required: true,
             },
         ],
         selectYourDocument: String,
         otherDocumentImage: [
             {
                 type: String,
-                required: true,
             },
         ],
     },

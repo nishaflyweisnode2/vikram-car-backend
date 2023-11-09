@@ -4,13 +4,9 @@ const mongoose = require('mongoose');
 
 
 module.exports.signupValidationSchema = Joi.object({
-    fullName: Joi.string().required(),
     email: Joi.string().email().required(),
-    mobileNumber: Joi.string()
-        .pattern(/^[0-9]+$/)
-        .length(10)
-        .required(),
-    password: Joi.string().optional(),
+    password: Joi.string().required(),
+    confirmPassword: Joi.string().required(),
 
 });
 

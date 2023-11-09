@@ -4,7 +4,7 @@ const router = express.Router();
 
 const { signup, verifyOTP, resendOTP, login, selectCity, addToFavourites, removeFromFavorites, addToMyBid, getToMyBid, getMyWins, updateProfileImage, getFavoriteCars, getMyBids, getAllUsers, getUserById, startAutobid, resetAutobid, cancelAutobid } = require("../controller/userController");
 
-const { authenticateUser, authorizeUser, authorization, authenticateAdmin } = require("../middleware/auth");
+const { authenticateUser, authorizeUser, authorization, authenticateAdmin, authenticateVendor } = require("../middleware/auth");
 
 const { createCity, getAllCity, upload } = require('../controller/cityController');
 
@@ -36,8 +36,8 @@ router.get('/:userId', getUserById);
 
 
 //cityName
-router.post('/cities', authenticateUser, authenticateAdmin, upload.single('image'), createCity)
-router.get('/cities/getAllCity', authenticateUser, getAllCity);
+router.post('/cities', /*authenticateUser, authenticateAdmin,*/ authenticateVendor, upload.single('image'), createCity)
+router.get('/cities/getAllCity', authenticateUser,  getAllCity);
 
 
 
