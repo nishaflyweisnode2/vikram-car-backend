@@ -232,10 +232,15 @@ const loginWithEmail = async (req, res) => {
             return res.status(406).json({ status: 406, message: "Password is not valid" });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
         const user = await vendorDb.findOne({ email });
         if (!user) {
             return res.status(401).json({ status: 401, message: "Invalid Email ID" });
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+
+        if (!isPasswordValid) {
+            return res.status(401).json({ status: 401, message: "Invalid Password" });
         }
 
         user.isVerified = true;
