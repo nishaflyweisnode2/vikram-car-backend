@@ -364,7 +364,7 @@ const getAllUser = async (req, res) => {
     try {
         const user = await userDb.find();
         if (!user) {
-            return res.status(404).json({ status: 404, message: 'No car found' })
+            return res.status(404).json({ status: 404, message: 'No User found' })
         }
         return res.status(200).json({
             status: 200,

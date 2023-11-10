@@ -19,7 +19,7 @@ router.get('/cars', authenticateVendor, getAllCars);
 router.get('/new-cars', authenticateVendor, getNewCars);
 router.get('/used-cars', authenticateVendor, getUsedCars);
 router.get('/search', authenticateVendor, searchCars);
-router.get('/getAllUser', authenticateVendor, getAllUser);
+router.get('/admin/getAllUser', authenticateVendor, getAllUser);
 router.get('/getLatestUser', authenticateVendor, getLatestUser);
 
 
