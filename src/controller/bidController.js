@@ -621,7 +621,7 @@ exports.resetAutoBid = async (req, res) => {
 
         await Bid.updateMany(
             { auction: auctionId, bidder: userId, bidStatus: 'StartBidding', winStatus: 'Underprocess' },
-            { $set: { winStatus: 'StartBidding', isAutobid: false } }
+            { $set: { isAutobid: false } }
         );
 
         res.status(200).json({ status: 200, success: true, message: 'Auto-bid settings reset successfully' });
