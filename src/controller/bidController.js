@@ -619,6 +619,11 @@ exports.resetAutoBid = async (req, res) => {
 
         await myBids.save();
 
+        await Bid.updateMany(
+            { auction: auctionId, bidder: userId, bidStatus: 'StartBidding', winStatus: 'Underprocess' },
+            { $set: { winStatus: 'StartBidding', isAutobid: false } }
+        );
+
         res.status(200).json({ status: 200, success: true, message: 'Auto-bid settings reset successfully' });
     } catch (error) {
         console.error(error);
@@ -658,7 +663,7 @@ exports.cancelAutoBid = async (req, res) => {
 
         await Bid.updateMany(
             { auction: auctionId, bidder: userId, bidStatus: 'StartBidding', winStatus: 'Underprocess' },
-            { $set: { winStatus: 'Backout' } }
+            { $set: { winStatus: 'Backout', isAutobid: false } }
         );
 
         res.status(200).json({ status: 200, success: true, message: 'Auto-bid settings canceled successfully' });
