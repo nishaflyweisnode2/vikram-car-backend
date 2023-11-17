@@ -8,7 +8,8 @@ const vendorDb = require('../model/vendorModel');
 
 // user start 
 const authenticateUser = (req, res, next) => {
-  const token = req.headers["x-acess-key"];
+  const token = req.get("Authorization")?.split("Bearer ")[1] ||
+    req.headers["x-acess-key"];
 
   if (!token) {
     return res.status(401).json({ status: false, message: 'Authorization token not provided' });
@@ -64,7 +65,8 @@ const authorization = async function (req, res, next) {
 
 
 const authenticateAdmin = (req, res, next) => {
-  const token = req.headers["x-acess-key"];
+  const token = req.get("Authorization")?.split("Bearer ")[1] ||
+    req.headers["x-acess-key"];
 
   if (!token) {
     return res.status(401).json({ status: false, message: 'Authorization token not provided' });
@@ -93,7 +95,8 @@ const authorizeVendor = (req, res, next) => {
 };
 
 const authenticateVendor = (req, res, next) => {
-  const token = req.headers["x-acess-key"];
+  const token = req.get("Authorization")?.split("Bearer ")[1] ||
+    req.headers["x-acess-key"];
 
   if (!token) {
     return res.status(401).json({ status: false, message: 'Authorization token not provided' });
