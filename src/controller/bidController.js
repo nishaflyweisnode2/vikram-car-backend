@@ -663,7 +663,7 @@ exports.cancelAutoBid = async (req, res) => {
 
         await Bid.updateMany(
             { auction: auctionId, bidder: userId, bidStatus: 'StartBidding', winStatus: 'Underprocess' },
-            { $set: { winStatus: 'Backout', isAutobid: false } }
+            { $set: { winStatus: 'Backout', bidStatus: 'Losing', isAutobid: false } }
         );
 
         res.status(200).json({ status: 200, success: true, message: 'Auto-bid settings canceled successfully' });
