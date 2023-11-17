@@ -5,10 +5,12 @@ const { authenticateUser, authorizeUser, authorization, authenticateAdmin, authe
 
 
 
-router.post('/create-car', /*authenticateUser, authenticateAdmin,*/ authenticateVendor, createCar);
+router.post('/create-car', authenticateUser, authenticateAdmin, createCar);
+router.post('/admin/create-car',  authenticateVendor, createCar);
 router.get('/car', authenticateUser, getCars);
 router.get('/:carId', getCarById);
 router.put('/update/:carId/image', authenticateUser, authenticateAdmin, updateCarImage);
+router.put('/admin/update/:carId/image',  authenticateVendor, updateCarImage);
 router.get('/cars/:buyingOption', authenticateUser, getCarsByBuyingOption);
 router.get('/search', authenticateUser, searchCars);
 router.get('/compare', authenticateUser, compareCars);
