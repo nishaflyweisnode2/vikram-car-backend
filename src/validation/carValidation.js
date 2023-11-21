@@ -17,6 +17,7 @@ module.exports.carSchema = Joi.object({
     fuelType: Joi.string().required(),
     description: Joi.string().required(),
     image: Joi.array().items(Joi.string()).optional(),
+    imageLinks: Joi.array().items(Joi.string()).optional(),
     year: Joi.number().integer().min(1900).max(new Date().getFullYear()).required(),
     mileage: Joi.number().integer().min(0).required(),
     owner: Joi.string().required(),

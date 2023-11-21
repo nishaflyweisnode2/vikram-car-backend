@@ -541,7 +541,9 @@ const getToMyBid = async (req, res) => {
         const getMyBid = user.myBids;
         const myBids = await Auction.find({ _id: { $in: getToMyBidId } }).populate('car').populate('bids');
 
-        res.status(200).json({ status: 200, myBids, getMyBid });
+        const count = myBids.length;
+
+        res.status(200).json({ status: 200, count, myBids, getMyBid, });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to fetch favorite cars' });
@@ -573,7 +575,10 @@ const getMyWins = async (req, res) => {
 
         const cars = await Car.find({ _id: { $in: carIds } });
 
-        res.status(200).json({ status: 200, wins: myWins, cars });
+        const count = myWins.length;
+
+
+        res.status(200).json({ status: 200, wins: count, myWins, cars });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to fetch user wins' });
@@ -637,7 +642,10 @@ const getFavoriteCars = async (req, res) => {
         const favoriteCarIds = user.favouriteCars;
         const favoriteCars = await Car.find({ _id: { $in: favoriteCarIds } });
 
-        res.status(200).json({ status: 200, favoriteCars });
+        const count = favoriteCars.length;
+
+
+        res.status(200).json({ status: 200, count, favoriteCars });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to fetch favorite cars' });
@@ -667,7 +675,10 @@ const getMyBids = async (req, res) => {
             bid.auction.bids = bids.filter(b => b.auction.equals(bid.auction._id));
         });
 
-        res.status(200).json({ status: 200, myBids });
+        const count = myBids.length;
+
+
+        res.status(200).json({ status: 200, count, myBids });
     } catch (error) {
         console.error(error);
         res.status(500).json({ status: 500, message: 'Failed to fetch user bids' });

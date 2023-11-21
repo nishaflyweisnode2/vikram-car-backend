@@ -45,6 +45,11 @@ const carSchema = new mongoose.Schema({
             type: String,
         },
     ],
+    imageLinks: [
+        {
+            type: String,
+        },
+    ],
     year: {
         type: Number,
     },
