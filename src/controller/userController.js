@@ -654,7 +654,7 @@ const getFavoriteCars = async (req, res) => {
 
 
 
-const getMyBids = async (req, res) => {
+const getMyBids1 = async (req, res) => {
     try {
         const userId = req.params.userId;
         const myBids = await MyBids.find({ user: userId }).populate({
@@ -685,6 +685,37 @@ const getMyBids = async (req, res) => {
     }
 };
 
+const getMyBids = async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const myBids = await MyBids.find({ user: userId }).populate({
+            path: 'auction',
+            model: 'Auction',
+        });
+
+        if (!myBids || myBids.length === 0) {
+            return res.status(404).json({ status: 404, message: 'No bids found for this user' });
+        }
+
+        await MyBids.populate(myBids, { path: 'user', model: 'User' });
+
+        const auctionIds = myBids.map(bid => bid.auction ? bid.auction._id : null);
+        const bids = await Bid.find({ auction: { $in: auctionIds } });
+
+        myBids.forEach(bid => {
+            if (bid.auction) {
+                bid.auction.bids = bids.filter(b => b.auction.equals(bid.auction._id));
+            }
+        });
+
+        const count = myBids.length;
+
+        res.status(200).json({ status: 200, count, myBids });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ status: 500, message: 'Failed to fetch user bids' });
+    }
+};
 
 
 const getAllUsers = async (req, res) => {
