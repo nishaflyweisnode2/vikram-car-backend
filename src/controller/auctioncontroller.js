@@ -417,8 +417,8 @@ const auctionHint = async (req, res) => {
                 highestBid: auction.highestBid,
                 endTime: auction.endTime,
             },
-            userBidStatus: userBid ? userBid.bidStatus : 'No bids',
-            userWintatus: userBid ? userBid.winStatus : 'No bids',
+            userBidStatus: userBid ? userBid.bidStatus : 'StartBidding',
+            userWintatus: userBid ? userBid.winStatus : 'Underprocess',
             userHighestBid: highestBid ? highestBid.amount : 0,
         });
     } catch (error) {
