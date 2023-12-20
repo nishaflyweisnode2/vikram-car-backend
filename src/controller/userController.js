@@ -529,7 +529,7 @@ const addToMyBid = async (req, res) => {
 };
 
 
-const getToMyBid = async (req, res) => {
+const getToMyBid1 = async (req, res) => {
     try {
         const userId = req.params.userId;
         const user = await userDb.findById(userId);
@@ -538,6 +538,7 @@ const getToMyBid = async (req, res) => {
             return res.status(404).json({ status: 404, message: 'No user found for this userId' });
         }
         const getToMyBidId = user.addToMyBids;
+        console.log("getToMyBidId", getToMyBidId);
         const getMyBid = user.myBids;
         const myBids = await Auction.find({ _id: { $in: getToMyBidId } }).populate('car').populate('bids');
 
@@ -549,6 +550,42 @@ const getToMyBid = async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch favorite cars' });
     }
 };
+
+
+const getToMyBid = async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const user = await userDb.findById(userId);
+
+        if (!user || user.length === 0) {
+            return res.status(404).json({ status: 404, message: 'No user found for this userId' });
+        }
+
+        const getToMyBidId = user.addToMyBids;
+        const myBids = await Auction.find({ _id: { $in: getToMyBidId } })
+            .populate('car')
+            .populate({
+                path: 'bids',
+                model: 'Bid',
+                populate: {
+                    path: 'auction',
+                    model: 'Auction',
+                },
+            });
+
+        if (!myBids || myBids.length === 0) {
+            return res.status(404).json({ status: 404, message: 'No bids found for this user' });
+        }
+
+        const count = myBids.length;
+
+        res.status(200).json({ status: 200, count, myBids });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to fetch favorite cars' });
+    }
+};
+
 
 
 const getMyWins = async (req, res) => {

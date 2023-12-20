@@ -125,7 +125,7 @@ exports.createBid = async (req, res) => {
             auction.approvalTime = (new Date(auction.endTime) - new Date()).toString();
             auction.timeExtended = true;
 
-            const previousBids = await Bid.find({ auction: auctionId, /*bidStatus: "StartBidding", winStatus: "Underprocess"*/ });
+            const previousBids = await Bid.find({ auction: auctionId, bidStatus: "Losing", winStatus: "Underprocess" });
             for (const previousBid of previousBids) {
                 previousBid.bidStatus = 'Losing';
                 previousBid.winStatus = 'Reject';
@@ -155,7 +155,7 @@ exports.createBid = async (req, res) => {
         //     console.log("Bid amount doesn't match finalPrice.");
         // }
 
-        const previousBid = await Bid.findOne({ auction: auctionId, bidStatus: "StartBidding", winStatus: "Underprocess" });
+        const previousBid = await Bid.findOne({ auction: auctionId, bidStatus: "Losing", winStatus: "Underprocess" });
 
         if (previousBid) {
             previousBid.bidStatus = 'Losing';
@@ -192,7 +192,7 @@ exports.createBid = async (req, res) => {
             auction: auctionId,
             bidder: userId,
             amount,
-            bidStatus: amount >= auction.finalPrice ? 'Winning' : 'StartBidding',
+            bidStatus: amount >= auction.finalPrice ? 'Winning' : 'Losing',
 
         });
 
@@ -300,7 +300,7 @@ exports.updateBidStatus = async (req, res) => {
 
         await bid.save();
 
-        const previousBids = await Bid.find({ auction: bid.auction, bidStatus: "StartBidding", winStatus: "Underprocess" });
+        const previousBids = await Bid.find({ auction: bid.auction, bidStatus: "Losing", winStatus: "Underprocess" });
 
         for (const previousBid of previousBids) {
             previousBid.bidStatus = 'Losing';
@@ -460,7 +460,7 @@ exports.placeAutoBid = async (req, res) => {
             }
         }
 
-        const existingBids = await Bid.find({ auction: auctionId, bidStatus: "StartBidding", winStatus: "Underprocess" });
+        const existingBids = await Bid.find({ auction: auctionId, bidStatus: "Losing", winStatus: "Underprocess" });
 
         if (existingBids.length > 0) {
             const highestBidAmount = Math.max(...existingBids.map(bid => bid.amount));
@@ -490,7 +490,7 @@ exports.placeAutoBid = async (req, res) => {
             auction.approvalTime = (new Date(auction.endTime) - new Date()).toString();
             auction.timeExtended = true;
 
-            const previousBids = await Bid.find({ auction: auctionId });
+            const previousBids = await Bid.find({ auction: auctionId, bidStatus: "Losing", winStatus: "Underprocess" });
             for (const previousBid of previousBids) {
                 previousBid.bidStatus = 'Losing';
                 previousBid.winStatus = 'Reject';
