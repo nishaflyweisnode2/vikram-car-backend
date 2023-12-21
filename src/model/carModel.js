@@ -68,6 +68,9 @@ const carSchema = new mongoose.Schema({
     owner: {
         type: String,
     },
+    ownerType: {
+        type: String,
+    },
     isUsed: {
         type: Boolean,
         default: false,

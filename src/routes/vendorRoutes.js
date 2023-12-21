@@ -8,6 +8,7 @@ const { authenticateVendor,
     authorizeVendor,
     vendorAuthorization, authenticateUser } = require("../middleware/auth");
 const { createCity, getAllCity } = require('../controller/cityController');
+const limitController = require('../controller/vendorController');
 
 
 
@@ -31,7 +32,10 @@ router.post('/cities', authenticateVendor, createCity)
 router.get('/admin/cities/getAllCity', authenticateVendor, getAllCity);
 
 
-
+router.post('/limits', authenticateVendor, limitController.createLimit);
+router.get('/limits', authenticateVendor, limitController.getLimits);
+router.put('/limits/:id', authenticateVendor, limitController.updateLimit);
+router.delete('/limits/:id', authenticateVendor, limitController.deleteLimit);
 
 
 

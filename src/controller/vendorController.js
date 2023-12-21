@@ -8,6 +8,9 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
 const twilio = require('twilio');
+const LimitModel = require('../model/limitModel');
+const mongoose = require('mongoose');
+
 
 const { signupValidationSchema, addToFavouritesSchema, workProfileUpdateSchema, documentsUpdateSchema, searchValidationSchema } = require('../validation/vendorValidation');
 
@@ -161,7 +164,7 @@ const upload2 = multer({ storage: storage }).array('otherDocumentImage', 3);
 // };
 
 
-const signup = async (req, res) => {
+exports.signup = async (req, res) => {
     try {
         const { email, password, confirmPassword } = req.body;
         const { error } = signupValidationSchema.validate({
@@ -217,7 +220,7 @@ const signup = async (req, res) => {
 };
 
 
-const loginWithEmail = async (req, res) => {
+exports.loginWithEmail = async (req, res) => {
     try {
         const data = req.body;
         const { email, password } = data;
@@ -263,7 +266,7 @@ const loginWithEmail = async (req, res) => {
 };
 
 
-const getAllCars = async (req, res) => {
+exports.getAllCars = async (req, res) => {
     try {
         const cars = await Car.find();
         if (!cars) {
@@ -281,7 +284,7 @@ const getAllCars = async (req, res) => {
 };
 
 
-const getNewCars = async (req, res) => {
+exports.getNewCars = async (req, res) => {
     try {
         const newCars = await Car.find().sort({ createdAt: -1 });
 
@@ -297,7 +300,7 @@ const getNewCars = async (req, res) => {
 };
 
 
-const getUsedCars = async (req, res) => {
+exports.getUsedCars = async (req, res) => {
     try {
         const usedCars = await Car.find({ isUsed: true }).sort({ createdAt: -1 });
 
@@ -313,7 +316,7 @@ const getUsedCars = async (req, res) => {
 };
 
 
-const searchCars = async (req, res) => {
+exports.searchCars = async (req, res) => {
     try {
         const { error } = searchValidationSchema.validate(req.query);
         if (error) {
@@ -360,7 +363,7 @@ const searchCars = async (req, res) => {
 };
 
 
-const getAllUser = async (req, res) => {
+exports.getAllUser = async (req, res) => {
     try {
         const user = await userDb.find();
         if (!user) {
@@ -378,7 +381,7 @@ const getAllUser = async (req, res) => {
 };
 
 
-const getLatestUser = async (req, res) => {
+exports.getLatestUser = async (req, res) => {
     try {
         const latestUser = await userDb.find().sort({ createdAt: -1 }).limit(100);
 
@@ -398,7 +401,7 @@ const getLatestUser = async (req, res) => {
 };
 
 
-const getAllCity = async (req, res) => {
+exports.getAllCity = async (req, res) => {
     try {
         const cities = await City.find();
         if (!cities || cities.length === 0) {
@@ -413,22 +416,94 @@ const getAllCity = async (req, res) => {
 };
 
 
+exports.createLimit = async (req, res) => {
+    try {
+        const { from, to, limit } = req.body;
 
+        const limitInstance = new LimitModel({ from, to, limit });
+        const validationError = limitInstance.validateSync();
+        if (validationError) {
+            return res.status(400).json({ status: 400, message: validationError.message });
+        }
 
+        await limitInstance.save();
 
-
-
-
-
-
-module.exports = {
-    signup,
-    loginWithEmail,
-    getAllCars,
-    getNewCars,
-    getUsedCars,
-    searchCars,
-    getAllUser,
-    getLatestUser,
-    getAllCity
+        return res.status(201).json({ status: 201, message: 'Limit created successfully', data: limitInstance });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ status: 500, error: 'Failed to create limit' });
+    }
 };
+
+exports.getLimits = async (req, res) => {
+    try {
+        const limits = await LimitModel.find();
+
+        return res.status(200).json({ status: 200, data: limits });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ status: 500, error: 'Failed to retrieve limits' });
+    }
+};
+
+exports.updateLimit = async (req, res) => {
+    try {
+        const limitId = req.params.id;
+
+        if (!mongoose.Types.ObjectId.isValid(limitId)) {
+            return res.status(400).json({ status: 400, message: 'Invalid limit ID format' });
+        }
+
+        const { from, to, limit } = req.body;
+
+        const limitInstance = new LimitModel({ from, to, limit });
+        const validationError = limitInstance.validateSync();
+        if (validationError) {
+            return res.status(400).json({ status: 400, message: validationError.message });
+        }
+
+        const updatedLimit = await LimitModel.findByIdAndUpdate(
+            limitId,
+            { from, to, limit },
+            { new: true }
+        );
+
+        if (!updatedLimit) {
+            return res.status(404).json({ status: 404, message: 'No limit found for the given ID' });
+        }
+
+        return res.status(200).json({ status: 200, message: 'Limit updated successfully', data: updatedLimit });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ status: 500, error: 'Failed to update limit' });
+    }
+};
+
+exports.deleteLimit = async (req, res) => {
+    try {
+        const limitId = req.params.id;
+
+        if (!mongoose.Types.ObjectId.isValid(limitId)) {
+            return res.status(400).json({ status: 400, message: 'Invalid limit ID format' });
+        }
+
+        const deletedLimit = await LimitModel.findByIdAndDelete(limitId);
+
+        if (!deletedLimit) {
+            return res.status(404).json({ status: 404, message: 'No limit found for the given ID' });
+        }
+
+        return res.status(200).json({ status: 200, message: 'Limit deleted successfully', data: deletedLimit });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ status: 500, error: 'Failed to delete limit' });
+    }
+};
+
+
+
+
+
+
+
+

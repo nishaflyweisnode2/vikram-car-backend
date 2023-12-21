@@ -9,7 +9,15 @@ const myBidsSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Auction',
     },
+    securityDeposit: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'SecurityDeposit',
+    },
     bidLimit: {
+        type: Number,
+        default: 0,
+    },
+    remaningBidLimit: {
         type: Number,
         default: 0,
     },

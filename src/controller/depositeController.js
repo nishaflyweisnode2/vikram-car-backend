@@ -1,5 +1,7 @@
 const SecurityDeposit = require('../model/depositeModel');
 const User = require('../model/userModel');
+const LimitModel = require('../model/limitModel');
+
 
 const { createSecurityDepositValidationSchema } = require('../validation/depositeValidation');
 
@@ -40,7 +42,8 @@ const createSecurityDeposit = async (req, res) => {
         if (error) {
             return res.status(400).json({ status: 400, message: error.details[0].message });
         }
-        const { amount, biddingLimit } = req.body;
+
+        const { amount } = req.body;
         const userId = req.params.userId;
 
         const user = await User.findById(userId);
@@ -48,12 +51,29 @@ const createSecurityDeposit = async (req, res) => {
             return res.status(404).json({ status: 404, message: 'User not found' });
         }
 
+        const bidLimit = await LimitModel.find();
+        if (!bidLimit || bidLimit.length === 0) {
+            return res.status(404).json({ status: 404, message: 'Bid limit not found' });
+        }
+
+        let biddingLimit;
+        for (const limit of bidLimit) {
+            if (amount >= limit.from && amount <= limit.to) {
+                biddingLimit = limit;
+                break;
+            }
+        }
+
+        if (!biddingLimit) {
+            return res.status(404).json({ status: 404, message: 'No bidding limit found for the given amount' });
+        }
+
         user.balance += amount;
 
         const securityDeposit = new SecurityDeposit({
             user: userId,
             amount,
-            biddingLimit
+            biddingLimit: biddingLimit.limit
         });
 
         await Promise.all([user.save(), securityDeposit.save()]);
@@ -64,6 +84,7 @@ const createSecurityDeposit = async (req, res) => {
         res.status(500).json({ status: 500, message: 'Failed to create security deposit' });
     }
 };
+
 
 
 

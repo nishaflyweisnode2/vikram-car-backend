@@ -4,7 +4,7 @@ const userDb = require('../model/userModel');
 const mongoose = require('mongoose');
 
 
-const { carSchema, getCarsByBuyingOptionSchema, searchCarsSchema, compareCarsSchema, buyCarValidationSchema } = require('../validation/carValidation');
+const { carSchema, updatecarSchema, getCarsByBuyingOptionSchema, searchCarsSchema, compareCarsSchema, buyCarValidationSchema } = require('../validation/carValidation');
 
 
 
@@ -52,6 +52,7 @@ const createCar = async (req, res) => {
             year,
             mileage,
             owner,
+            ownerType,
             isUsed,
             isScrap,
             color,
@@ -80,6 +81,7 @@ const createCar = async (req, res) => {
             year,
             mileage,
             owner,
+            ownerType,
             isUsed,
             isScrap,
             color,
@@ -108,6 +110,95 @@ const createCar = async (req, res) => {
 };
 
 
+const updateCar = async (req, res) => {
+    try {
+        const carId = req.params.id;
+
+        if (!mongoose.Types.ObjectId.isValid(carId)) {
+            return res.status(400).json({ status: 400, message: 'Invalid car ID format' });
+        }
+
+        const { error } = updatecarSchema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ status: 400, message: error.details[0].message });
+        }
+
+        const {
+            brand,
+            name,
+            buyingOption,
+            price,
+            model,
+            variant,
+            fuelType,
+            description,
+            image,
+            imageLinks,
+            year,
+            mileage,
+            owner,
+            ownerType,
+            isUsed,
+            isScrap,
+            color,
+            transmission,
+            engineSize,
+            state,
+            city,
+            rto,
+            documentStatus
+        } = req.body;
+
+        let checkBrand = await Brand.findById(brand);
+        if (!checkBrand) {
+            return res.status(404).json({ status: 404, message: 'No car brand found for the given ID' });
+        }
+
+        const updatedCar = await Car.findByIdAndUpdate(
+            carId,
+            {
+                brand: checkBrand,
+                name,
+                buyingOption,
+                price,
+                model,
+                variant,
+                fuelType,
+                description,
+                image,
+                imageLinks,
+                year,
+                mileage,
+                owner,
+                ownerType,
+                isUsed,
+                isScrap,
+                color,
+                transmission,
+                engineSize,
+                state,
+                city,
+                rto,
+                documentStatus
+            },
+            { new: true }
+        ).populate('brand').exec();
+
+        if (!updatedCar) {
+            return res.status(404).json({ status: 404, message: 'No car found for the given ID' });
+        }
+
+        return res.status(200).json({
+            status: 200,
+            message: 'Car updated successfully',
+            updatedCar
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Failed to update car' });
+    }
+};
+
 
 const getCars = async (req, res) => {
     try {
@@ -119,7 +210,6 @@ const getCars = async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch cars' });
     }
 };
-
 
 
 
@@ -192,7 +282,6 @@ const getCarsByBuyingOption = async (req, res) => {
 
 
 
-
 const searchCars = async (req, res) => {
     try {
         const { error } = searchCarsSchema.validate(req.query);
@@ -239,7 +328,6 @@ const searchCars = async (req, res) => {
         res.status(500).json({ error: 'Failed to search cars' });
     }
 };
-
 
 
 const compareCars = async (req, res) => {
@@ -406,4 +494,4 @@ const getCarRatings = async (req, res) => {
 };
 
 
-module.exports = { createCar, getCars, getCarById, updateCarImage, getCarsByBuyingOption, searchCars, compareCars, buyCar, addCarRating, getCarRatings };
+module.exports = { createCar, updateCar, getCars, getCarById, updateCarImage, getCarsByBuyingOption, searchCars, compareCars, buyCar, addCarRating, getCarRatings };

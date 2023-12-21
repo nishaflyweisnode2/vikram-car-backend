@@ -366,33 +366,6 @@ const updateFinalPrice = async (req, res) => {
 const auctionHint1 = async (req, res) => {
     try {
         const auctionId = req.params.auctionId;
-
-        const auction = await Auction.findById(auctionId);
-
-        if (!auction) {
-            return res.status(404).json({ success: false, message: 'Auction not found' });
-        }
-
-        const highestBid = await Bid.findOne({ auction: auctionId }).sort({ amount: -1 });
-
-        return res.status(200).json({
-            success: true,
-            auction: {
-                startingPrice: auction.startingPrice,
-                finalPrice: auction.finalPrice,
-                highestBid: highestBid ? highestBid.amount : 0,
-            },
-        });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ success: false, message: 'Failed to get auction details' });
-    }
-};
-
-
-const auctionHint = async (req, res) => {
-    try {
-        const auctionId = req.params.auctionId;
         const userId = req.params.userId;
 
         const auction = await Auction.findById(auctionId);
@@ -426,6 +399,84 @@ const auctionHint = async (req, res) => {
         return res.status(500).json({ success: false, message: 'Failed to get auction details' });
     }
 };
+
+const auctionHint = async (req, res) => {
+    try {
+        const auctionId = req.params.auctionId;
+        const userId = req.params.userId;
+
+        const auction = await Auction.findById(auctionId);
+
+        if (!auction) {
+            return res.status(404).json({ success: false, message: 'Auction not found' });
+        }
+
+        const highestBid = await Bid.findOne({ auction: auctionId }).sort({ amount: -1 });
+
+        const userBid = await Bid.findOne({ auction: auctionId, bidder: userId }).sort({ createdAt: -1 });
+
+        if (userBid && userBid.bidStatus === 'Winning') {
+            return res.status(200).json({
+                success: true,
+                message: 'Congratulations! You are the winner!',
+                auction: {
+                    startingPrice: auction.startingPrice,
+                    finalPrice: auction.finalPrice,
+                    highestBid: highestBid ? highestBid.amount : 0,
+                    endTime: auction.endTime,
+                    status: auction.status,
+                },
+                userBid: {
+                    amount: userBid.amount,
+                    bidStatus: userBid.bidStatus,
+                    winStatus: userBid.winStatus,
+                    createdAt: userBid.createdAt,
+                },
+            });
+        }
+
+        let userWintatus = 'Underprocess';
+        if (userBid) {
+            userWintatus = userBid.winStatus;
+        }
+
+        let userHighestBid = 0;
+        if (highestBid) {
+            userHighestBid = auction.highestBid;
+        }
+
+        let finalPriceToShow = auction.finalPrice;
+        if (auction.finalPrice < userHighestBid) {
+            finalPriceToShow = userHighestBid + auction.startingPrice;
+        }
+
+        if (auction.status === 'Closed') {
+            return res.status(400).json({ success: false, message: 'Auction is closed' });
+        }
+
+        return res.status(200).json({
+            success: true,
+            auction: {
+                startingPrice: auction.startingPrice,
+                finalPrice: finalPriceToShow,
+                highestBid: auction.highestBid,
+                endTime: auction.endTime,
+            },
+            userBidStatus: userBid ? userBid.bidStatus : 'Losing',
+            userWintatus: userWintatus,
+            userHighestBid: userHighestBid,
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ success: false, message: 'Failed to get auction details' });
+    }
+};
+
+
+
+
+
+
 
 
 

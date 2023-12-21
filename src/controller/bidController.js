@@ -6,6 +6,8 @@ const Auction = require('../model/auctionModel');
 const userDb = require('../model/userModel');
 const Car = require('../model/carModel');
 const MyBids = require('../model/myBidModel');
+const SecurityDeposit = require('../model/depositeModel');
+
 
 
 const { bidSchema, bidUpdateSchema } = require('../validation/bidvalidation');
@@ -98,6 +100,11 @@ exports.createBid = async (req, res) => {
             return res.status(400).json({ status: 400, message: error.details[0].message });
         }
 
+        const user = await userDb.findById(userId);
+        if (!user) {
+            return res.status(404).json({ status: 404, message: 'User not found' });
+        }
+
         const auction = await Auction.findById(auctionId);
         if (!auction) {
             return res.status(404).json({ status: 404, message: 'Auction not found' });
@@ -111,9 +118,9 @@ exports.createBid = async (req, res) => {
         const remainingTime = (new Date(auction.endTime) - new Date()) / 1000;
         console.log("remaningTime", remainingTime);
 
-        if (amount <= currentHighestBid) {
-            return res.status(400).json({ status: 400, message: 'Your bid must be higher than the current highest bid' });
-        }
+        // if (amount <= currentHighestBid) {
+        //     return res.status(400).json({ status: 400, message: `Your bid must be higher than the current highest bid price (${auction.highestBid}).` });
+        // }
 
         if (amount < auction.startingPrice) {
             return res.status(400).json({ success: false, message: `Your bid must be equal to or higher than the starting price (${auction.startingPrice}). Please increase your bid amount.` });
@@ -155,13 +162,32 @@ exports.createBid = async (req, res) => {
         //     console.log("Bid amount doesn't match finalPrice.");
         // }
 
-        const previousBid = await Bid.findOne({ auction: auctionId, bidStatus: "Losing", winStatus: "Underprocess" });
+        const previousBids = await Bid.find({
+            auction: auctionId,
+            bidStatus: { $in: ["StartBidding", "Losing"] },
+            winStatus: "Underprocess"
+        });
 
-        if (previousBid) {
+        for (const previousBid of previousBids) {
             previousBid.bidStatus = 'Losing';
             previousBid.winStatus = 'Reject';
-            await previousBid.save();
+
+            try {
+                await previousBid.save();
+            } catch (error) {
+                console.error('Error updating previous bid:', error);
+            }
         }
+
+
+        const securityDeposit = await SecurityDeposit.findOne({ user: userId })
+            .sort({ createdAt: -1 })
+            .limit(1);
+
+        if (!securityDeposit) {
+            return res.status(404).json({ status: 404, message: 'Security deposit not found please add first some amount to bid' });
+        }
+
 
         let myBids = await MyBids.findOne({ user: userId, auction: auctionId });
 
@@ -171,15 +197,71 @@ exports.createBid = async (req, res) => {
                 auction: auctionId,
                 startBidAmount: amount,
                 currentBidAmount: amount,
-                lastBidAmount: previousBid ? previousBid.amount : 0,
+                lastBidAmount: previousBids.length > 0 ? Math.max(...previousBids.map(bid => bid.amount)) : 0,
+                bidIncrementAmount: auction.bidIncrement,
+                bidLimit: securityDeposit.biddingLimit,
+                securityDeposit: securityDeposit._id
             });
         } else if (myBids.startBidAmount === 0) {
             myBids.startBidAmount = amount;
             myBids.currentBidAmount = amount;
         } else {
+            const proposedBidAmount = amount - myBids.currentBidAmount;
+            console.log("amount", amount);
+            console.log("proposedBidAmount", proposedBidAmount);
+            // if (myBids.bidLimit > 0) {
+            //     const remainingBidLimit = myBids.bidLimit - amount;
+
+            // if (remainingBidLimit < 0) {
+            //     return res.status(400).json({
+            //         status: 400,
+            //         message: `Your remaining bid limit is not sufficient for this bid.`
+            //     });
+            // }
+
+            // myBids.remaningBidLimit = remainingBidLimit;
+
+            if (myBids.bidLimit > 0) {
+                const remainingBidLimit = myBids.bidLimit - amount;
+
+                if (remainingBidLimit < 0) {
+                    const latestSecurityDeposit = await SecurityDeposit.findOne({ user: userId })
+                        .sort({ createdAt: -1 })
+                        .limit(1);
+
+                    if (latestSecurityDeposit && latestSecurityDeposit._id !== myBids.securityDeposit) {
+                        if (latestSecurityDeposit.biddingLimit >= amount) {
+                            myBids.bidLimit = latestSecurityDeposit.biddingLimit;
+                            myBids.securityDeposit = latestSecurityDeposit._id;
+                            myBids.remaningBidLimit = latestSecurityDeposit.biddingLimit - amount;
+                        } else {
+                            return res.status(400).json({
+                                status: 400,
+                                message: `Your remaining bid limit is not sufficient for this bid.`
+                            });
+                        }
+                    } else {
+                        return res.status(400).json({
+                            status: 400,
+                            message: `Your remaining bid limit is not sufficient for this bid.`
+                        });
+                    }
+                } else {
+                    myBids.remaningBidLimit = remainingBidLimit;
+                }
+            }
+
+
+            if (proposedBidAmount > myBids.bidIncrementAmount) {
+                return res.status(400).json({
+                    status: 400,
+                    message: `Your bid increment exceeds the allowed bid increment amount of ${myBids.bidIncrementAmount}.`
+                });
+            }
+
             // myBids.startBidAmount = amount;
             myBids.currentBidAmount = amount;
-            myBids.lastBidAmount = previousBid ? previousBid.amount : 0;
+            myBids.lastBidAmount = previousBids.length > 0 ? Math.max(...previousBids.map(bid => bid.amount)) : 0;
         }
 
         if (amount >= auction.finalPrice) {
@@ -196,7 +278,9 @@ exports.createBid = async (req, res) => {
 
         });
 
-        auction.highestBid = amount;
+        if (amount >= auction.highestBid) {
+            auction.highestBid = amount;
+        }
 
         await newBid.save();
 
@@ -364,74 +448,215 @@ exports.getBidsByUserAndAuction = async (req, res) => {
 };
 
 
-// exports.placeAutoBid = async (req, res) => {
-//     try {
-//         const { userId, auctionId } = req.params;
-//         let { startBidAmount } = req.body;
-//         const user = await userDb.findById(userId);
-//         if (!user) {
-//             return res.status(404).json({ success: false, message: 'User not found' });
-//         }
 
-//         const auction = await Auction.findOne({ status: "Active", auctionId });
-//         if (!auction) {
-//             return res.status(404).json({ success: false, message: 'Auction not found' });
-//         }
+async function placeAutoBidFunction(req, userId, auctionId, startBidAmount, myBids, auction, res,) {
+    console.log("Entering placeAutoBidFunction");
 
-//         if (!user.myBids.autobidEnabled) {
-//             return res.status(400).json({ success: false, message: 'Auto-bidding is not enabled for this user' });
-//         }
+    const user = await userDb.findById(userId);
+    if (!user) {
+        return res.status({ success: false, message: 'User not found' });
+    }
 
-//         // const existingBids = await Bid.find({ auction: auctionId });
-//         const existingBids = await Bid.find({ auction: auctionId, bidStatus: "StartBidding", winStatus: "Underprocess" });
+    var auction = await Auction.findOne({ status: "Active", auctionId });
+    if (!auction) {
+        return res.status(404).json({ success: false, message: 'Auction not found' });
+    }
 
-//         if (existingBids.length > 0) {
-//             console.log('Found existing bids:', existingBids);
+    if (startBidAmount < auction.startingPrice) {
+        return res.status(400).json({ success: false, message: `Your bid must be equal to or higher than the starting price (${auction.startingPrice}). Please increase your bid amount.` });
+    }
 
-//             const highestBidAmount = Math.max(...existingBids.map(bid => bid.amount));
+    var myBids = await MyBids.findOne({ user: userId, auction: auctionId });
 
-//             if (startBidAmount <= highestBidAmount) {
-//                 return res.status(400).json({ success: false, message: `Start bid amount must be higher than the highest existing bid (${highestBidAmount}). Please increase your bid amount.` });
-//             }
+    if (myBids) {
+        if (!myBids || !myBids.autobidEnabled) {
+            return res.status(400).json({ success: false, message: 'Auto-bidding is not enabled for this user' });
+        }
+    }
 
-//             for (const existingBid of existingBids) {
-//                 existingBid.bidStatus = 'Losing';
-//                 existingBid.winStatus = 'Backout';
+    const existingBids = await Bid.find({
+        auction: auctionId, bidStatus: { $in: ["StartBidding", "Losing"] },
+        winStatus: "Underprocess"
+    });
 
-//                 try {
-//                     await existingBid.save();
-//                     console.log('Updated existing bid:', existingBid);
-//                 } catch (error) {
-//                     console.error('Error updating existing bid:', error);
-//                 }
-//             }
-//         }
+    if (existingBids.length > 0) {
+        const highestBidAmount = Math.max(...existingBids.map(bid => bid.amount));
 
-//         user.myBids.startBidAmount = startBidAmount;
-//         await user.save();
+        for (const existingBid of existingBids) {
+            existingBid.bidStatus = 'Losing';
+            existingBid.winStatus = 'Reject';
 
-//         const newBidAmount = startBidAmount;
+            try {
+                await existingBid.save();
+            } catch (error) {
+                console.error('Error updating existing bid:', error);
+            }
+        }
+    }
 
-//         const newBid = new Bid({
-//             auction: auctionId,
-//             bidder: userId,
-//             amount: newBidAmount,
-//             bidStatus: 'StartBidding',
-//             winStatus: 'Underprocess',
-//         });
+    if (req.cancelAutoBidTimeout) {
+        req.cancelAutoBidTimeout();
+    }
 
-//         auction.highestBid = newBidAmount;
+    const remainingTime = (new Date(auction.endTime) - new Date()) / 1000;
+    console.log("Remaining Time:", remainingTime);
 
-//         await newBid.save();
-//         await auction.bids.push(newBid._id);
-//         await auction.save();
+    if (remainingTime < 120 && startBidAmount > auction.finalPrice && !auction.timeExtended) {
+        auction.endTime = new Date(auction.endTime.getTime() + 120000);
+        auction.approvalTime = (new Date(auction.endTime) - new Date()).toString();
+        auction.timeExtended = true;
 
-//         return res.status(200).json({ status: 200, success: true, message: 'Auto-bid placed successfully' });
-//     } catch (error) {
-//         console.error(error);
-//         return res.status(500).json({ status: 200, success: false, message: 'Failed to place auto-bid' });
-//     }
-// };
+        const previousBids = await Bid.find({ auction: auctionId, bidStatus: "StartBidding", winStatus: "Underprocess" });
+        for (const previousBid of previousBids) {
+            previousBid.bidStatus = 'Losing';
+            previousBid.winStatus = 'Reject';
+
+            try {
+                await previousBid.save();
+            } catch (error) {
+                console.error('Error updating previous bid:', error);
+            }
+        }
+    } else if (startBidAmount >= auction.finalPrice) {
+        console.log("Setting winner:", userId);
+        auction.winner = userId;
+        auction.status = 'Closed';
+    } else {
+        console.log("Bid amount doesn't match finalPrice.");
+    }
+
+    console.log("Approval Time:", auction.approvalTime);
+
+    const securityDeposit = await SecurityDeposit.findOne({ user: userId })
+        .sort({ createdAt: -1 })
+        .limit(1);
+
+    if (!securityDeposit) {
+        return res.status(404).json({ status: 404, message: 'Security deposit not found. Please add some amount to bid.' });
+    }
+
+    if (!myBids) {
+        myBids = new MyBids({
+            user: userId,
+            auction: auctionId,
+            startBidAmount: startBidAmount,
+            currentBidAmount: startBidAmount,
+            lastBidAmount: existingBids.length > 0 ? Math.max(...existingBids.map(bid => bid.amount)) : 0,
+            bidIncrementAmount: auction.bidIncrement,
+            bidLimit: securityDeposit.biddingLimit,
+            securityDeposit: securityDeposit._id,
+        });
+    } else if (myBids.startBidAmount === 0) {
+        myBids.startBidAmount = startBidAmount;
+        myBids.currentBidAmount = startBidAmount;
+    } else {
+        const proposedBidAmount = startBidAmount - myBids.currentBidAmount;
+        console.log("Start Bid Amount:", startBidAmount);
+        console.log("Proposed Bid Amount:", proposedBidAmount);
+
+        if (myBids.bidLimit > 0) {
+            const remainingBidLimit = myBids.bidLimit - startBidAmount;
+
+            if (remainingBidLimit < 0) {
+                const latestSecurityDeposit = await SecurityDeposit.findOne({ user: userId })
+                    .sort({ createdAt: -1 })
+                    .limit(1);
+
+                if (latestSecurityDeposit && latestSecurityDeposit._id !== myBids.securityDeposit) {
+                    if (latestSecurityDeposit.biddingLimit >= startBidAmount) {
+                        myBids.bidLimit = latestSecurityDeposit.biddingLimit;
+                        myBids.securityDeposit = latestSecurityDeposit._id;
+                        myBids.remaningBidLimit = latestSecurityDeposit.biddingLimit - startBidAmount;
+                    } else {
+                        return res.status(400).json({
+                            status: 400,
+                            message: `Your remaining bid limit is not sufficient for this bid.`
+                        });
+                    }
+                } else {
+                    return res.status(400).json({
+                        status: 400,
+                        message: `Your remaining bid limit is not sufficient for this bid.`
+                    });
+                }
+            } else {
+                myBids.remaningBidLimit = remainingBidLimit;
+            }
+        }
+
+        if (proposedBidAmount > myBids.bidIncrementAmount) {
+            return res.status(400).json({
+                status: 400,
+                message: `Your bid increment exceeds the allowed bid increment amount of ${myBids.bidIncrementAmount}.`
+            });
+        }
+
+        myBids.currentBidAmount = startBidAmount;
+        myBids.lastBidAmount = existingBids.length > 0 ? Math.max(...existingBids.map(bid => bid.amount)) : 0;
+    }
+
+    await myBids.save();
+
+    const newBidAmount = startBidAmount;
+
+    const newBid = new Bid({
+        auction: auctionId,
+        bidder: userId,
+        amount: newBidAmount,
+        bidStatus: newBidAmount >= auction.finalPrice ? 'Winning' : 'Losing',
+        winStatus: 'Underprocess',
+        isAutobid: true,
+    });
+
+    if (newBidAmount >= auction.highestBid) {
+        auction.highestBid = newBidAmount;
+    }
+
+    await newBid.save();
+    await auction.bids.push(newBid._id);
+    await auction.save();
+
+    if (newBidAmount >= auction.finalPrice) {
+        auction.status = 'Closed';
+        auction.winner = userId;
+        newBid.bidStatus = 'Winning';
+        myBids.winBidAmount = newBidAmount;
+
+        newBid.isAutobid = true;
+
+        let message = '';
+        if (newBidAmount >= auction.finalPrice) {
+            message = 'Congratulations! You won the auction!';
+        } else {
+            message = 'You didn\'t win the auction. Better luck next time.';
+        }
+
+        const response = {
+            status: 200,
+            success: true,
+            message: message,
+        };
+        await auction.save();
+        await newBid.save();
+        await myBids.save();
+
+        console.log("Exiting placeAutoBidFunction - Auction won or closed");
+        return res.status(200).json(response);
+    }
+
+    await auction.save();
+    await newBid.save();
+    await myBids.save();
+
+    const response = {
+        status: 200,
+        success: true,
+        message: 'Auto-bid placed successfully. You are currently the highest bidder. Keep an eye on the auction!',
+    };
+
+    console.log("Exiting placeAutoBidFunction - Auto-bid placed successfully");
+    return (response);
+}
 
 
 exports.placeAutoBid = async (req, res) => {
@@ -460,18 +685,21 @@ exports.placeAutoBid = async (req, res) => {
             }
         }
 
-        const existingBids = await Bid.find({ auction: auctionId, bidStatus: "Losing", winStatus: "Underprocess" });
+        const existingBids = await Bid.find({
+            auction: auctionId, bidStatus: { $in: ["StartBidding", "Losing"] },
+            winStatus: "Underprocess"
+        });
 
         if (existingBids.length > 0) {
             const highestBidAmount = Math.max(...existingBids.map(bid => bid.amount));
 
-            if (startBidAmount <= highestBidAmount) {
-                return res.status(400).json({ success: false, message: `Start bid amount must be higher than the highest existing bid (${highestBidAmount}). Please increase your bid amount.` });
-            }
+            // if (startBidAmount <= highestBidAmount) {
+            //     return res.status(400).json({ success: false, message: `Start bid amount must be higher than the highest existing bid (${highestBidAmount}). Please increase your bid amount.` });
+            // }
 
             for (const existingBid of existingBids) {
                 existingBid.bidStatus = 'Losing';
-                existingBid.winStatus = 'Backout';
+                existingBid.winStatus = 'Reject';
 
                 try {
                     await existingBid.save();
@@ -480,6 +708,22 @@ exports.placeAutoBid = async (req, res) => {
                 }
             }
         }
+
+        const autoBidTimeout = setTimeout(async () => {
+            if (myBids && myBids.autobidEnabled && myBids.remaningBidLimit > 0) {
+                const autoBidAmount = myBids.currentBidAmount + myBids.bidIncrementAmount;
+
+                await placeAutoBidFunction(userId, auctionId, autoBidAmount, myBids, auction,);
+            }
+        }, 10000);
+
+        const cancelAutoBidTimeout = () => {
+            clearTimeout(autoBidTimeout);
+            console.log("Auto-bid timeout canceled");
+        };
+
+        req.cancelAutoBidTimeout = cancelAutoBidTimeout;
+
 
         const remainingTime = (new Date(auction.endTime) - new Date()) / 1000;
         console.log("remaningTime", remainingTime);
@@ -490,7 +734,7 @@ exports.placeAutoBid = async (req, res) => {
             auction.approvalTime = (new Date(auction.endTime) - new Date()).toString();
             auction.timeExtended = true;
 
-            const previousBids = await Bid.find({ auction: auctionId, bidStatus: "Losing", winStatus: "Underprocess" });
+            const previousBids = await Bid.find({ auction: auctionId, bidStatus: "StartBidding", winStatus: "Underprocess" });
             for (const previousBid of previousBids) {
                 previousBid.bidStatus = 'Losing';
                 previousBid.winStatus = 'Reject';
@@ -511,6 +755,13 @@ exports.placeAutoBid = async (req, res) => {
 
         console.log("approvaltime", auction.approvalTime);
 
+        const securityDeposit = await SecurityDeposit.findOne({ user: userId })
+            .sort({ createdAt: -1 })
+            .limit(1);
+
+        if (!securityDeposit) {
+            return res.status(404).json({ status: 404, message: 'Security deposit not found please add first some amount to bid' });
+        }
 
         if (!myBids) {
             myBids = new MyBids({
@@ -519,12 +770,54 @@ exports.placeAutoBid = async (req, res) => {
                 startBidAmount: startBidAmount,
                 currentBidAmount: startBidAmount,
                 lastBidAmount: existingBids.length > 0 ? Math.max(...existingBids.map(bid => bid.amount)) : 0,
-
+                bidIncrementAmount: auction.bidIncrement,
+                bidLimit: securityDeposit.biddingLimit,
+                securityDeposit: securityDeposit._id,
             });
         } else if (myBids.startBidAmount === 0) {
             myBids.startBidAmount = startBidAmount;
             myBids.currentBidAmount = startBidAmount;
         } else {
+            const proposedBidAmount = startBidAmount - myBids.currentBidAmount;
+            console.log("startBidAmount", startBidAmount);
+            console.log("proposedBidAmount", proposedBidAmount);
+
+            if (myBids.bidLimit > 0) {
+                const remainingBidLimit = myBids.bidLimit - startBidAmount;
+
+                if (remainingBidLimit < 0) {
+                    const latestSecurityDeposit = await SecurityDeposit.findOne({ user: userId })
+                        .sort({ createdAt: -1 })
+                        .limit(1);
+
+                    if (latestSecurityDeposit && latestSecurityDeposit._id !== myBids.securityDeposit) {
+                        if (latestSecurityDeposit.biddingLimit >= startBidAmount) {
+                            myBids.bidLimit = latestSecurityDeposit.biddingLimit;
+                            myBids.securityDeposit = latestSecurityDeposit._id;
+                            myBids.remaningBidLimit = latestSecurityDeposit.biddingLimit - startBidAmount;
+                        } else {
+                            return res.status(400).json({
+                                status: 400,
+                                message: `Your remaining bid limit is not sufficient for this bid.`
+                            });
+                        }
+                    } else {
+                        return res.status(400).json({
+                            status: 400,
+                            message: `Your remaining bid limit is not sufficient for this bid.`
+                        });
+                    }
+                } else {
+                    myBids.remaningBidLimit = remainingBidLimit;
+                }
+            }
+
+            if (proposedBidAmount > myBids.bidIncrementAmount) {
+                return res.status(400).json({
+                    status: 400,
+                    message: `Your bid increment exceeds the allowed bid increment amount of ${myBids.bidIncrementAmount}.`
+                });
+            }
             // myBids.startBidAmount = amount;
             myBids.currentBidAmount = startBidAmount;
             myBids.lastBidAmount = existingBids.length > 0 ? Math.max(...existingBids.map(bid => bid.amount)) : 0;
@@ -538,12 +831,13 @@ exports.placeAutoBid = async (req, res) => {
             auction: auctionId,
             bidder: userId,
             amount: newBidAmount,
-            bidStatus: 'StartBidding',
+            bidStatus: newBidAmount >= auction.finalPrice ? 'Winning' : 'Losing',
             winStatus: 'Underprocess',
             isAutobid: true,
         });
-
-        auction.highestBid = newBidAmount;
+        if (newBidAmount >= auction.highestBid) {
+            auction.highestBid = newBidAmount;
+        }
 
         await newBid.save();
         await auction.bids.push(newBid._id);
@@ -593,6 +887,223 @@ exports.placeAutoBid = async (req, res) => {
         return res.status(500).json({ status: 500, success: false, message: 'Failed to place auto-bid' });
     }
 };
+
+
+
+
+exports.placeAutoBid1 = async (req, res) => {
+    try {
+        const { userId, auctionId } = req.params;
+        let { startBidAmount } = req.body;
+        const user = await userDb.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        const auction = await Auction.findOne({ status: "Active", auctionId });
+        if (!auction) {
+            return res.status(404).json({ success: false, message: 'Auction not found' });
+        }
+
+        if (startBidAmount < auction.startingPrice) {
+            return res.status(400).json({ success: false, message: `Your bid must be equal to or higher than the starting price (${auction.startingPrice}). Please increase your bid amount.` });
+        }
+
+        let myBids = await MyBids.findOne({ user: userId, auction: auctionId });
+
+        if (myBids) {
+            if (!myBids || !myBids.autobidEnabled) {
+                return res.status(400).json({ success: false, message: 'Auto-bidding is not enabled for this user' });
+            }
+        }
+
+        const existingBids = await Bid.find({
+            auction: auctionId, bidStatus: { $in: ["StartBidding", "Losing"] },
+            winStatus: "Underprocess"
+        });
+
+        if (existingBids.length > 0) {
+            const highestBidAmount = Math.max(...existingBids.map(bid => bid.amount));
+
+            // if (startBidAmount <= highestBidAmount) {
+            //     return res.status(400).json({ success: false, message: `Start bid amount must be higher than the highest existing bid (${highestBidAmount}). Please increase your bid amount.` });
+            // }
+
+            for (const existingBid of existingBids) {
+                existingBid.bidStatus = 'Losing';
+                existingBid.winStatus = 'Reject';
+
+                try {
+                    await existingBid.save();
+                } catch (error) {
+                    console.error('Error updating existing bid:', error);
+                }
+            }
+        }
+
+        const remainingTime = (new Date(auction.endTime) - new Date()) / 1000;
+        console.log("remaningTime", remainingTime);
+
+
+        if (remainingTime < 120 && startBidAmount > auction.finalPrice && !auction.timeExtended) {
+            auction.endTime = new Date(auction.endTime.getTime() + 120000);
+            auction.approvalTime = (new Date(auction.endTime) - new Date()).toString();
+            auction.timeExtended = true;
+
+            const previousBids = await Bid.find({ auction: auctionId, bidStatus: "StartBidding", winStatus: "Underprocess" });
+            for (const previousBid of previousBids) {
+                previousBid.bidStatus = 'Losing';
+                previousBid.winStatus = 'Reject';
+
+                try {
+                    await previousBid.save();
+                } catch (error) {
+                    console.error('Error updating previous bid:', error);
+                }
+            }
+        } else if (startBidAmount >= auction.finalPrice) {
+            console.log("Setting winner:", userId);
+            auction.winner = userId;
+            auction.status = 'Closed';
+        } else {
+            console.log("Bid amount doesn't match finalPrice.");
+        }
+
+        console.log("approvaltime", auction.approvalTime);
+
+        const securityDeposit = await SecurityDeposit.findOne({ user: userId })
+            .sort({ createdAt: -1 })
+            .limit(1);
+
+        if (!securityDeposit) {
+            return res.status(404).json({ status: 404, message: 'Security deposit not found please add first some amount to bid' });
+        }
+
+        if (!myBids) {
+            myBids = new MyBids({
+                user: userId,
+                auction: auctionId,
+                startBidAmount: startBidAmount,
+                currentBidAmount: startBidAmount,
+                lastBidAmount: existingBids.length > 0 ? Math.max(...existingBids.map(bid => bid.amount)) : 0,
+                bidIncrementAmount: auction.bidIncrement,
+                bidLimit: securityDeposit.biddingLimit,
+                securityDeposit: securityDeposit._id,
+            });
+        } else if (myBids.startBidAmount === 0) {
+            myBids.startBidAmount = startBidAmount;
+            myBids.currentBidAmount = startBidAmount;
+        } else {
+            const proposedBidAmount = startBidAmount - myBids.currentBidAmount;
+            console.log("startBidAmount", startBidAmount);
+            console.log("proposedBidAmount", proposedBidAmount);
+
+            if (myBids.bidLimit > 0) {
+                const remainingBidLimit = myBids.bidLimit - startBidAmount;
+
+                if (remainingBidLimit < 0) {
+                    const latestSecurityDeposit = await SecurityDeposit.findOne({ user: userId })
+                        .sort({ createdAt: -1 })
+                        .limit(1);
+
+                    if (latestSecurityDeposit && latestSecurityDeposit._id !== myBids.securityDeposit) {
+                        if (latestSecurityDeposit.biddingLimit >= startBidAmount) {
+                            myBids.bidLimit = latestSecurityDeposit.biddingLimit;
+                            myBids.securityDeposit = latestSecurityDeposit._id;
+                            myBids.remaningBidLimit = latestSecurityDeposit.biddingLimit - startBidAmount;
+                        } else {
+                            return res.status(400).json({
+                                status: 400,
+                                message: `Your remaining bid limit is not sufficient for this bid.`
+                            });
+                        }
+                    } else {
+                        return res.status(400).json({
+                            status: 400,
+                            message: `Your remaining bid limit is not sufficient for this bid.`
+                        });
+                    }
+                } else {
+                    myBids.remaningBidLimit = remainingBidLimit;
+                }
+            }
+
+            if (proposedBidAmount > myBids.bidIncrementAmount) {
+                return res.status(400).json({
+                    status: 400,
+                    message: `Your bid increment exceeds the allowed bid increment amount of ${myBids.bidIncrementAmount}.`
+                });
+            }
+            // myBids.startBidAmount = amount;
+            myBids.currentBidAmount = startBidAmount;
+            myBids.lastBidAmount = existingBids.length > 0 ? Math.max(...existingBids.map(bid => bid.amount)) : 0;
+        }
+
+        await myBids.save();
+
+        const newBidAmount = startBidAmount;
+
+        const newBid = new Bid({
+            auction: auctionId,
+            bidder: userId,
+            amount: newBidAmount,
+            bidStatus: newBidAmount >= auction.finalPrice ? 'Winning' : 'Losing',
+            winStatus: 'Underprocess',
+            isAutobid: true,
+        });
+        if (newBidAmount >= auction.highestBid) {
+            auction.highestBid = newBidAmount;
+        }
+
+        await newBid.save();
+        await auction.bids.push(newBid._id);
+        await auction.save();
+
+        if (newBidAmount >= auction.finalPrice) {
+            auction.status = 'Closed';
+            auction.winner = userId;
+            newBid.bidStatus = 'Winning';
+            myBids.winBidAmount = newBidAmount;
+
+            newBid.isAutobid = true;
+
+            let message = '';
+            if (newBidAmount >= auction.finalPrice) {
+                message = 'Congratulations! You won the auction!';
+            } else {
+                message = 'You didn\'t win the auction. Better luck next time.';
+            }
+
+            const response = {
+                status: 200,
+                success: true,
+                message: message,
+            };
+            await auction.save();
+            await newBid.save();
+            await myBids.save();
+
+            return res.status(200).json(response);
+        }
+
+        await auction.save();
+        await newBid.save();
+        await myBids.save();
+
+        const response = {
+            status: 200,
+            success: true,
+            message: 'Auto-bid placed successfully You are currently the highest bidder. Keep an eye on the auction!',
+        };
+
+        // return res.status(200).json({ status: 200, success: true, message: 'Auto-bid placed successfully' });
+        return res.status(200).json(response);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ status: 500, success: false, message: 'Failed to place auto-bid' });
+    }
+};
+
 
 exports.resetAutoBid = async (req, res) => {
     try {
