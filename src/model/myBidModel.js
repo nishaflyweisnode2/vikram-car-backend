@@ -57,6 +57,10 @@ const myBidsSchema = new mongoose.Schema({
         type: Number,
         default: 0,
     },
+    isAutobid: {
+        type: Boolean,
+        default: false
+    }
 }, { timestamps: true });
 
 const MyBids = mongoose.model('MyBids', myBidsSchema);
