@@ -750,7 +750,7 @@ exports.placeAutoBid = async (req, res) => {
             auction.approvalTime = (new Date(auction.endTime) - new Date()).toString();
             auction.timeExtended = true;
 
-            const previousBids = await Bid.find({ auction: auctionId, bidStatus: "StartBidding", winStatus: "Underprocess" });
+            const previousBids = await Bid.find({ auction: auctionId, bidStatus: { $in: ["StartBidding", "Losing"] }, winStatus: "Underprocess" });
             for (const previousBid of previousBids) {
                 previousBid.bidStatus = 'Losing';
                 previousBid.winStatus = 'Reject';
@@ -896,85 +896,143 @@ exports.placeAutoBid = async (req, res) => {
         return res.status(500).json({ status: 500, success: false, message: 'Failed to place auto-bid' });
     }
 };
-async function scheduleAutoBid() {
 
-}
-async function scheduleAutoBid() {
-    console.log("entry place auto bid");
+// async function scheduleAutoBid() {
+//     console.log("entry place auto bid");
+//     const auction = await Auction.find({ status: 'Active' });
+//     if (auction.length > 0) {
+//         let count = 0;
+//         for (let i = 0; i < auction.length; i++) {
+//             let myBids = await MyBids.find({ auction: auction[i]._id, isAutobid: true, remaningBidLimit: { $gt: 0 } });
+//             if (myBids.length > 0) {
+//                 for (let j = 0; j < myBids.length; j++) {
+//                     if (myBids[j].remaningBidLimit > 0) {
+//                         let currentBidAmount = myBids[j].currentBidAmount + auction[i].bidIncrement;
+//                         let remainingBidLimit = myBids[j].bidLimit - (myBids[j].currentBidAmount + auction[i].bidIncrement);
+//                         let lastBidAmount = myBids[j].currentBidAmount + auction[i].bidIncrement;
+//                         let update = await Bid.findOneAndUpdate({ bidder: myBids[j].user }, { $set: { bidStatus: "Losing", winStatus: "Reject" } }, { new: true })
+//                         if (auction[i].highestBid < currentBidAmount) {
+//                             let isAutobid;
+//                             if (remainingBidLimit > 0) {
+//                                 isAutobid = true
+//                             } else {
+//                                 remainingBidLimit = 0;
+//                                 isAutobid = false
+//                             }
+//                             const newBid = new Bid({ auction: myBids.auctionId, bidder: myBids[j].user, amount: myBids[j].currentBidAmount + auction[i].bidIncrement, bidStatus: (myBids[j].currentBidAmount + auction[i].bidIncrement) >= auction[i].finalPrice ? 'Winning' : 'Losing', });
+//                             await newBid.save();
+//                             console.log("-----------------------------9015---------");
+
+//                             let update1 = await MyBids.findByIdAndUpdate({ _id: myBids[j]._id }, { $set: { currentBidAmount: currentBidAmount, lastBidAmount: lastBidAmount, remaningBidLimit: remainingBidLimit, isAutobid: isAutobid } }, { new: true })
+//                             let update2 = await Auction.findByIdAndUpdate({ _id: auction[i]._id }, { $set: { highestBid: currentBidAmount } }, { new: true })
+//                         } else {
+//                             if ((myBids[j].currentBidAmount + auction[i].bidIncrement) >= auction[i].finalPrice) {
+//                                 const newBid = new Bid({ auction: myBids.auctionId, bidder: myBids[j].user, amount: myBids[j].currentBidAmount + auction[i].bidIncrement, bidStatus: (myBids[j].currentBidAmount + auction[i].bidIncrement) >= auction[i].finalPrice ? 'Winning' : 'Losing', });
+//                                 console.log("-----------------------------9017---------");
+//                                 await newBid.save();
+//                             } else {
+//                                 const newBid = new Bid({ auction: myBids.auctionId, bidder: myBids[j].user, amount: myBids[j].currentBidAmount + auction[i].bidIncrement, bidStatus: "Losing", winStatus: "Reject" });
+//                                 await newBid.save();
+//                             }
+//                             let isAutobid;
+//                             if (remainingBidLimit > 0) {
+//                                 isAutobid = true
+//                             } else {
+//                                 isAutobid = false;
+//                                 remainingBidLimit = 0;
+//                             }
+//                             let update1 = await MyBids.findOneAndUpdate({ _id: myBids[j]._id }, { $set: { currentBidAmount: currentBidAmount, lastBidAmount: lastBidAmount, remainingBidLimit: remainingBidLimit, isAutobid: isAutobid } }, { new: true })
+//                             let update2 = await Auction.findOneAndUpdate({ _id: auction[i]._id }, { $set: { highestBid: currentBidAmount } }, { new: true })
+//                             console.log("-----------------------------9020---------");
+
+//                         }
+//                     } else {
+//                         let update1 = await MyBids.findOneAndUpdate({ _id: myBids[j]._id }, { $set: { isAutobid: false } }, { new: true })
+//                         console.log("-----------------------------9021---------");
+
+//                     }
+//                     count++;
+//                 }
+//             } else {
+//                 scheduleAutoBid()
+//             }
+//         }
+//         if (count == auction.length) {
+//             scheduleAutoBid()
+//         }
+//     }
+
+// }
+
+async function scheduleAutoBid1(req, res) {
+    console.log("ENTERY PLACE AUTO BID");
+    let count = 0;
     const auction = await Auction.find({ status: 'Active' });
+
     if (auction.length > 0) {
-        let count = 0;
-        console.log("-----------------------------904---------");
+        console.log("------------1------------------");
         for (let i = 0; i < auction.length; i++) {
-            console.log("-----------------------------906---------");
-            let myBids = await MyBids.find({ auction: auction[i]._id, isAutobid: true });
+            console.log("------------2-----------------");
+            let myBids = await MyBids.find({ auction: auction[i]._id, isAutobid: true, remaningBidLimit: { $gte: 0 } });
+            console.log("------------3------------------");
             if (myBids.length > 0) {
-                console.log("-----------------------------909---------");
+                console.log("------------4------------------");
                 for (let j = 0; j < myBids.length; j++) {
-                    if (myBids[j].remaningBidLimit > 0) {
-                        console.log("-----------------------------9011---------");
-                        let currentBidAmount = myBids[j].currentBidAmount + auction[i].bidIncrement;
-                        let remainingBidLimit = myBids[j].bidLimit - (myBids[j].currentBidAmount + auction[i].bidIncrement);
-                        let lastBidAmount = myBids[j].currentBidAmount + auction[i].bidIncrement;
-                        console.log("-----------------------------9014---------");
-
-                        let update = await Bid.findOneAndUpdate({ bidder: myBids[j].user }, { $set: { bidStatus: "Losing", winStatus: "Reject" } }, { new: true })
-                        if (auction[i].highestBid < currentBidAmount) {
-                            let isAutobid;
-                            if (remainingBidLimit > 0) {
-                                isAutobid = true
-                            } else {
-                                remainingBidLimit = 0;
-                                isAutobid = false
-                            }
-                            const newBid = new Bid({ auction: myBids.auctionId, bidder: myBids[j].user, amount: myBids[j].currentBidAmount + auction[i].bidIncrement, bidStatus: (myBids[j].currentBidAmount + auction[i].bidIncrement) >= auction[i].finalPrice ? 'Winning' : 'Losing', });
-                            await newBid.save();
-                            console.log("-----------------------------9015---------");
-
-                            let update1 = await MyBids.findByIdAndUpdate({ _id: myBids[j]._id }, { $set: { currentBidAmount: currentBidAmount, lastBidAmount: lastBidAmount, remaningBidLimit: remainingBidLimit, isAutobid: isAutobid } }, { new: true })
-                            let update2 = await Auction.findByIdAndUpdate({ _id: auction[i]._id }, { $set: { highestBid: currentBidAmount } }, { new: true })
-                        } else {
-                            if ((myBids[j].currentBidAmount + auction[i].bidIncrement) >= auction[i].finalPrice) {
-                                const newBid = new Bid({ auction: myBids.auctionId, bidder: myBids[j].user, amount: myBids[j].currentBidAmount + auction[i].bidIncrement, bidStatus: (myBids[j].currentBidAmount + auction[i].bidIncrement) >= auction[i].finalPrice ? 'Winning' : 'Losing', });
-                                console.log("-----------------------------9017---------");
-                                await newBid.save();
-                            } else {
-                                const newBid = new Bid({ auction: myBids.auctionId, bidder: myBids[j].user, amount: myBids[j].currentBidAmount + auction[i].bidIncrement, bidStatus: "Losing", winStatus: "Reject" });
-                                await newBid.save();
-                            }
-                            let isAutobid;
-                            if (remainingBidLimit > 0) {
-                                isAutobid = true
-                            } else {
-                                isAutobid = false;
-                                remainingBidLimit = 0;
-                            }
-                            let update1 = await MyBids.findOneAndUpdate({ _id: myBids[j]._id }, { $set: { currentBidAmount: currentBidAmount, lastBidAmount: lastBidAmount, remainingBidLimit: remainingBidLimit, isAutobid: isAutobid } }, { new: true })
-                            let update2 = await Auction.findOneAndUpdate({ _id: auction[i]._id }, { $set: { highestBid: currentBidAmount } }, { new: true })
-                            console.log("-----------------------------9020---------");
-
-                        }
-                    } else {
-                        let update1 = await MyBids.findOneAndUpdate({ _id: myBids[j]._id }, { $set: { isAutobid: false } }, { new: true })
-                        console.log("-----------------------------9021---------");
-
+                    console.log("------------5------------------");
+                    try {
+                        await placeAutoBidFunction(req, myBids[j].user, auction[i]._id, myBids[j].currentBidAmount + auction[i].bidIncrement, myBids[j], auction[i], res);
+                        console.log("------------6------------------");
+                        count++;
+                    } catch (error) {
+                        console.error('Error placing auto bid:', error);
                     }
-                    count++;
                 }
             } else {
-                scheduleAutoBid()
+                scheduleAutoBid();
             }
         }
         if (count == auction.length) {
-            scheduleAutoBid()
+            scheduleAutoBid();
+        }
+    }
+    console.log("EXIST PLACE AUTO BID");
+}
+
+async function scheduleAutoBid(req, res) {
+    console.log("ENTRY PLACE AUTO BID");
+    let count = 0;
+    const auctions = await Auction.find({ status: 'Active' });
+
+    if (auctions.length > 0) {
+        console.log("------------1------------------");
+        for (const auction of auctions) {
+            console.log("------------2-----------------");
+            const myBids = await MyBids.find({ auction: auction._id, isAutobid: true, remaningBidLimit: { $gte: 0 } });
+            console.log("------------3------------------");
+
+            if (myBids.length > 0) {
+                console.log("------------4------------------");
+                for (const myBid of myBids) {
+                    console.log("------------5------------------");
+                    try {
+                        const adjustedBidAmount = myBid.currentBidAmount + auction.bidIncrement;
+                        await placeAutoBidFunction(req, myBid.user, auction._id, adjustedBidAmount, myBid, auction, res);
+                        console.log("------------6------------------");
+                        count++;
+                    } catch (error) {
+                        console.error('Error placing auto bid:', error);
+                    }
+                }
+            }
         }
     }
 
+    console.log("EXIT PLACE AUTO BID");
 }
 
-setTimeout(async () => {
-    console.log("--------------------");
-    scheduleAutoBid()
+setInterval(async () => {
+    console.log("-----------call out function---------");
+    await scheduleAutoBid();
 }, 10000);
 
 
